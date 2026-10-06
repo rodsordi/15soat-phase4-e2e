@@ -25,6 +25,11 @@ public class ExecutionSteps {
         RestAssured.baseURI = EnvironmentConfig.getExecBaseUrl();
     }
 
+    @Dado("que o mecânico responsável está devidamente autenticado com perfil {string}")
+    public void mechanicIsAuthenticated(String role) {
+        theWorkshopExecutionServiceIsAvailable();
+    }
+
     @Dado("uma ordem de execução criada com identificador válido")
     public void existingExecutionOrder() {
         theWorkshopExecutionServiceIsAvailable();

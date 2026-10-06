@@ -6,18 +6,19 @@ Funcionalidade: Transação Compensatória e Rollback da Saga Distribuída
   Para garantir consistência eventual e evitar ordens de serviço órfãs ou em estado inconsistente
 
   # ============================================================================
-  # Contexto: Validação Operacional dos Microsserviços da Plataforma
+  # Contexto: Validação Operacional dos Microsserviços e Colaborador Autenticado
   # ============================================================================
   Contexto:
     Dado que todos os microsserviços da plataforma estão em execução e operacionais
+    E que o atendente da oficina está devidamente autenticado com perfil "EMPLOYEE"
 
   # ============================================================================
   # Cenário 1: Rollback Compensatório por Recusa de Pagamento
   # ============================================================================
   @saga-compensacao
   Cenário: Rollback Compensatório - Recusa de pagamento cancela a Ordem de Serviço
-    # --- 1. Abertura da Ordem de Serviço ---
-    Quando o cliente abre uma nova Ordem de Serviço para o veículo "ABC1D23"
+    # --- 1. Abertura da Ordem de Serviço na Recepção ---
+    Quando o atendente abre uma nova Ordem de Serviço para o veículo "ABC1D23"
 
     # --- 2. Aprovação do Orçamento ---
     E o gestor da oficina aprova o orçamento da Ordem de Serviço

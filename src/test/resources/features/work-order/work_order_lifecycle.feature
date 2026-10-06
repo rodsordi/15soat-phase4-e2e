@@ -6,10 +6,11 @@ Funcionalidade: Ciclo de Vida Completo da Ordem de Serviço
   Para que o veículo seja reparado com qualidade, notificado com transparência e liberado com métricas consolidadas
 
   # ============================================================================
-  # Contexto: Disponibilidade Operacional do Serviço de Ordens de Serviço
+  # Contexto: Disponibilidade Operacional do Serviço e Colaboradores Autenticados
   # ============================================================================
   Contexto:
     Dado que o serviço de Ordem de Serviço está em execução e operacional
+    E que o atendente e o mecânico estão devidamente autenticados com perfil "EMPLOYEE"
     E um cliente cadastrado com documento "52998224725" e veículo "BRA2E19"
 
   # ============================================================================
@@ -18,7 +19,7 @@ Funcionalidade: Ciclo de Vida Completo da Ordem de Serviço
   @ciclo-completo
   Cenário: Ciclo de vida completo da ordem de serviço da recepção até a liberação final
     # --- 1. Recepção do Veículo e Abertura da Ordem de Serviço (RECEIVED) ---
-    Quando o cliente com documento "52998224725" solicita uma Ordem de Serviço para o veículo "BRA2E19" com a descrição "Troca de óleo e revisão de freios"
+    Quando o atendente abre uma nova Ordem de Serviço para o cliente "52998224725" e veículo "BRA2E19" com a descrição "Troca de óleo e revisão de freios"
     Então a Ordem de Serviço deve ser criada com o status "RECEIVED"
     E a consulta da Ordem de Serviço por ID deve retornar o documento "52998224725" e a placa "BRA2E19"
 

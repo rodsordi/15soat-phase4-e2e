@@ -6,10 +6,11 @@ Funcionalidade: Gerenciamento da Fila de Oficina e Execução de Reparos
   Para garantir a rastreabilidade do ciclo de manutenção e notificar a conclusão ao ecossistema
 
   # ============================================================================
-  # Contexto: Disponibilidade Operacional do Serviço de Execução
+  # Contexto: Disponibilidade Operacional do Serviço e Mecânico Autenticado
   # ============================================================================
   Contexto:
     Dado que o serviço de Execução da Oficina está em execução e operacional
+    E que o mecânico responsável está devidamente autenticado com perfil "EMPLOYEE"
 
   # ============================================================================
   # Cenário 1: Ciclo de Manutenção da Fila à Conclusão

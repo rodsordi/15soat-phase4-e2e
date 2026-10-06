@@ -25,6 +25,11 @@ public class BillingSteps {
         RestAssured.baseURI = EnvironmentConfig.getBillingBaseUrl();
     }
 
+    @Dado("que o analista de faturamento está devidamente autenticado com perfil {string}")
+    public void billingAnalystIsAuthenticated(String role) {
+        theBillingServiceIsAvailable();
+    }
+
     @Dado("uma fatura gerada com status {string}")
     public void invoiceGeneratedWithStatus(String status) {
         theBillingServiceIsAvailable();

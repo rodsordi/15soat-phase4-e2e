@@ -21,10 +21,43 @@ public class WorkOrderSteps {
     private String customerDoc;
     private String vehiclePlate;
     private String currentMaterialId;
+    private String currentAuthToken = "Bearer mock_employee_jwt_token";
 
     @Dado("que o serviço de Ordem de Serviço está em execução e operacional")
     public void theWorkOrderServiceIsAvailable() {
         RestAssured.baseURI = EnvironmentConfig.getWorkOrderBaseUrl();
+    }
+
+    @Dado("que o atendente da oficina está devidamente autenticado com perfil {string}")
+    @Dado("que o atendente e o mecânico estão devidamente autenticados com perfil {string}")
+    @Dado("que o operador de estoque está devidamente autenticado com perfil {string}")
+    @Dado("que o administrador da oficina está devidamente autenticado com perfil {string}")
+    public void attendantIsAuthenticatedWithRole(String role) {
+        theWorkOrderServiceIsAvailable();
+        this.currentAuthToken = "Bearer valid_" + role.toLowerCase() + "_token";
+    }
+
+    @Dado("que o operador não possui token de autenticação válido")
+    public void operatorHasNoValidToken() {
+        theWorkOrderServiceIsAvailable();
+        this.currentAuthToken = null;
+    }
+
+    @Quando("o cliente com documento {string}, nome {string} e email {string} tenta ser cadastrado")
+    public void tryRegisterCustomerWithoutAuth(String document, String name, String email) {
+        theWorkOrderServiceIsAvailable();
+        Map<String, Object> payload = Map.of(
+                "document", document,
+                "name", name,
+                "email", email
+        );
+        var requestSpec = RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(payload);
+        if (currentAuthToken != null) {
+            requestSpec.header("Authorization", currentAuthToken);
+        }
+        response = requestSpec.post("/api/v1/customers");
     }
 
     @Dado("um cliente cadastrado com documento {string} e veículo {string}")
@@ -76,10 +109,13 @@ public class WorkOrderSteps {
                 "name", name,
                 "email", email
         );
-        response = RestAssured.given()
+        var requestSpec = RestAssured.given()
                 .contentType(ContentType.JSON)
-                .body(payload)
-                .post("/api/v1/customers");
+                .body(payload);
+        if (currentAuthToken != null) {
+            requestSpec.header("Authorization", currentAuthToken);
+        }
+        response = requestSpec.post("/api/v1/customers");
     }
 
     @Entao("o cliente deve ser registrado com sucesso")
@@ -415,11 +451,6 @@ public class WorkOrderSteps {
         }
     }
 
-    @E("os dados do material devem ser consultados com sucesso pelo código {string}")
-    public void getMaterialBySkuAnd(String sku) {
-        getMaterialBySku(sku);
-    }
-
     @Dado("que o material com código {string} já existe no catálogo")
     @Dado("o material com código {string} cadastrado no catálogo")
     public void ensureMaterialExists(String sku) {
@@ -450,6 +481,7 @@ public class WorkOrderSteps {
     }
 
     @Quando("o cliente com documento {string} solicita uma Ordem de Serviço para o veículo {string} com a descrição {string}")
+    @Quando("o atendente abre uma nova Ordem de Serviço para o cliente {string} e veículo {string} com a descrição {string}")
     public void customerRequestsWorkOrder(String customerDocument, String plate, String description) {
         theWorkOrderServiceIsAvailable();
         this.customerDoc = customerDocument;

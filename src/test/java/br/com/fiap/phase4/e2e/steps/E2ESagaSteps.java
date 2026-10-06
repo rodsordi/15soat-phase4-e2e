@@ -27,6 +27,7 @@ public class E2ESagaSteps {
     }
 
     @Quando("o cliente abre uma nova Ordem de Serviço para o veículo {string}")
+    @Quando("o atendente abre uma nova Ordem de Serviço para o veículo {string}")
     public void customerOpensWorkOrder(String plate) {
         RestAssured.baseURI = EnvironmentConfig.getWorkOrderBaseUrl();
         Map<String, Object> payload = Map.of(

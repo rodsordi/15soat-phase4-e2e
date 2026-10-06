@@ -6,10 +6,11 @@ Funcionalidade: Gestão de Clientes e Veículos Vinculados
   Para manter a base cadastral atualizada e viabilizar a abertura de ordens de serviço
 
   # ============================================================================
-  # Contexto: Disponibilidade Operacional do Serviço de Ordens de Serviço
+  # Contexto: Disponibilidade Operacional do Serviço e Atendente Autenticado
   # ============================================================================
   Contexto:
     Dado que o serviço de Ordem de Serviço está em execução e operacional
+    E que o atendente da oficina está devidamente autenticado com perfil "EMPLOYEE"
 
   # ============================================================================
   # Cenário 1: Cadastro de Cliente
@@ -127,3 +128,12 @@ Funcionalidade: Gestão de Clientes e Veículos Vinculados
       | errorCode | VEHICLE_ALREADY_EXISTS                               |
       | title     | Business Rule Violation                              |
       | detail    | Vehicle already exists with license plate: BRA2E19   |
+
+  # ============================================================================
+  # Cenário 9: Tentativa de Operação sem Autenticação (Segurança / RBAC)
+  # ============================================================================
+  @seguranca @nao-autenticado
+  Cenário: Tentativa de cadastro de cliente por operador não autenticado é negada
+    Dado que o operador não possui token de autenticação válido
+    Quando o cliente com documento "52998224725", nome "Anônimo" e email "anonimo@fiap.com.br" tenta ser cadastrado
+    Então o código de status HTTP da resposta deve ser 401

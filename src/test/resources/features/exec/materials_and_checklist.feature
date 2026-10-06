@@ -6,10 +6,11 @@ Funcionalidade: Gestão de Materiais de Estoque e Checklists Técnicos
   Para garantir controle de peças utilizadas e qualidade nos procedimentos da oficina
 
   # ============================================================================
-  # Contexto: Disponibilidade Operacional do Serviço de Execução
+  # Contexto: Disponibilidade Operacional do Serviço e Mecânico Autenticado
   # ============================================================================
   Contexto:
     Dado que o serviço de Execução da Oficina está em execução e operacional
+    E que o mecânico responsável está devidamente autenticado com perfil "EMPLOYEE"
     E uma ordem de execução criada com identificador válido
 
   # ============================================================================

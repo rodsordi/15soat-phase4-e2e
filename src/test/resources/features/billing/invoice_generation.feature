@@ -6,10 +6,11 @@ Funcionalidade: Geração de Faturas e Checkout de Pagamento
   Para disponibilizar links de checkout e QR Code Pix ao cliente
 
   # ============================================================================
-  # Contexto: Disponibilidade Operacional do Serviço de Faturamento
+  # Contexto: Disponibilidade Operacional do Serviço e Analista Autenticado
   # ============================================================================
   Contexto:
     Dado que o serviço de Faturamento está em execução e operacional
+    E que o analista de faturamento está devidamente autenticado com perfil "EMPLOYEE"
 
   # ============================================================================
   # Cenário 1: Emissão de Fatura com Integração ao Mercado Pago

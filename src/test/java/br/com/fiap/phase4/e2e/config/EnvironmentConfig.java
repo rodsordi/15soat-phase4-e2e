@@ -27,6 +27,13 @@ public class EnvironmentConfig {
         return System.getProperty("exec.url", "http://localhost:8083");
     }
 
+    public static String getAuthLambdaBaseUrl() {
+        if ("prd".equalsIgnoreCase(ENV)) {
+            return GATEWAY_URL;
+        }
+        return System.getProperty("auth.lambda.url", "http://localhost:8080");
+    }
+
     public static String getActiveEnvironment() {
         return ENV;
     }

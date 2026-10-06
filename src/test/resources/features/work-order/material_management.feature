@@ -6,10 +6,11 @@ Funcionalidade: Gestão e Precificação de Materiais de Estoque
   Para garantir disponibilidade de itens e correta orçamentação das ordens de serviço
 
   # ============================================================================
-  # Contexto: Disponibilidade Operacional do Serviço de Ordens de Serviço
+  # Contexto: Disponibilidade Operacional do Serviço e Operador Autenticado
   # ============================================================================
   Contexto:
     Dado que o serviço de Ordem de Serviço está em execução e operacional
+    E que o operador de estoque está devidamente autenticado com perfil "EMPLOYEE"
 
   # ============================================================================
   # Cenário 1: Cadastro de Material de Estoque

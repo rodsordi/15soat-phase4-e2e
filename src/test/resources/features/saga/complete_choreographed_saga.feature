@@ -6,18 +6,19 @@ Funcionalidade: Coreografia Completa da Saga Distribuída (Happy Path)
   Para garantir o fluxo distribuído íntegro desde a abertura até a conclusão do veículo
 
   # ============================================================================
-  # Contexto: Validação Operacional dos Microsserviços da Plataforma
+  # Contexto: Validação Operacional dos Microsserviços e Colaborador Autenticado
   # ============================================================================
   Contexto:
     Dado que todos os microsserviços da plataforma estão em execução e operacionais
+    E que o atendente da oficina está devidamente autenticado com perfil "EMPLOYEE"
 
   # ============================================================================
   # Cenário 1: Happy Path - Saga Concluída com Sucesso
   # ============================================================================
   @saga-sucesso
   Cenário: Fluxo Principal - Ciclo completo da Saga da abertura à finalização do veículo
-    # --- 1. Abertura da Ordem de Serviço ---
-    Quando o cliente abre uma nova Ordem de Serviço para o veículo "BRA2E19"
+    # --- 1. Abertura da Ordem de Serviço na Recepção ---
+    Quando o atendente abre uma nova Ordem de Serviço para o veículo "BRA2E19"
 
     # --- 2. Aprovação do Orçamento ---
     E o gestor da oficina aprova o orçamento da Ordem de Serviço

@@ -6,10 +6,11 @@ Funcionalidade: Gestão do Catálogo de Serviços
   Para precificar e padronizar as manutenções solicitadas nas ordens de serviço
 
   # ============================================================================
-  # Contexto: Disponibilidade Operacional do Serviço de Ordens de Serviço
+  # Contexto: Disponibilidade Operacional do Serviço e Administrador Autenticado
   # ============================================================================
   Contexto:
     Dado que o serviço de Ordem de Serviço está em execução e operacional
+    E que o administrador da oficina está devidamente autenticado com perfil "ADMIN"
 
   # ============================================================================
   # Cenário 1: Cadastro de Serviço no Catálogo
