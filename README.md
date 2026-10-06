@@ -12,7 +12,7 @@ Repositório centralizado de testes automatizados para a Fase 4 do Tech Challeng
 ## Funcionalidades, Diagramas & Testes de Carga (1:1 por Fluxo)
 
 ### 1. Microsserviço de Ordens de Serviço (`features/work-order/`)
-- 📊 **Modelo de Dados & MER**: [`model.md`](src/test/resources/features/work-order/model.md) *(PostgreSQL - Clientes, Veículos, OS, Itens com Snapshot e Histórico)*
+- 📊 **Modelo de Dados & MER**: [`MODEL.md`](../15soat-phase4-api-work-order/MODEL.md) *(PostgreSQL - Clientes, Veículos, OS, Itens com Snapshot e Histórico)*
 - **Gestão de Clientes e Veículos**:
   - Especificação BDD: [`customer_vehicle_management.feature`](src/test/resources/features/work-order/customer_vehicle_management.feature)
   - Diagrama de Sequência: [`customer_vehicle_management.md`](src/test/resources/features/work-order/customer_vehicle_management.md)
@@ -27,7 +27,7 @@ Repositório centralizado de testes automatizados para a Fase 4 do Tech Challeng
   - Teste de Carga (k6): [`work_order_lifecycle.js`](src/test/resources/features/work-order/work_order_lifecycle.js)
 
 ### 2. Microsserviço de Faturamento e Pagamentos (`features/billing/`)
-- 📊 **Modelo de Dados & MER**: [`model.md`](src/test/resources/features/billing/model.md) *(PostgreSQL - Faturas, Idempotência e Webhooks)*
+- 📊 **Modelo de Dados & MER**: [`MODEL.md`](../15soat-phase4-api-billing/MODEL.md) *(PostgreSQL - Faturas, Idempotência e Webhooks)*
 - **Geração de Fatura e Checkout**:
   - Especificação BDD: [`invoice_generation.feature`](src/test/resources/features/billing/invoice_generation.feature)
   - Diagrama de Sequência: [`invoice_generation.md`](src/test/resources/features/billing/invoice_generation.md)
@@ -38,7 +38,7 @@ Repositório centralizado de testes automatizados para a Fase 4 do Tech Challeng
   - Teste de Carga (k6): [`payment_webhook_processing.js`](src/test/resources/features/billing/payment_webhook_processing.js)
 
 ### 3. Microsserviço de Execução de Oficina (`features/exec/`)
-- 📊 **Modelo de Dados NoSQL**: [`model.md`](src/test/resources/features/exec/model.md) *(MongoDB - Agregado de Execução, Checklists e Peças Embutidas)*
+- 📊 **Modelo de Dados NoSQL**: [`MODEL.md`](../15soat-phase4-api-exec/MODEL.md) *(MongoDB - Agregado de Execução, Checklists e Peças Embutidas)*
 - **Materiais e Checklist de Inspeção Técnica**:
   - Especificação BDD: [`materials_and_checklist.feature`](src/test/resources/features/exec/materials_and_checklist.feature)
   - Diagrama de Sequência: [`materials_and_checklist.md`](src/test/resources/features/exec/materials_and_checklist.md)

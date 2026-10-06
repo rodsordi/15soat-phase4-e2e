@@ -21,9 +21,9 @@ Funcionalidade: Gerenciamento da Fila de Oficina e Execução de Reparos
     Então a ordem de execução deve ser criada com o status "QUEUED"
 
     # --- 2. Início do Reparo pelo Mecânico ---
-    Quando atualiza o status da execução para "IN_REPAIR"
+    Quando o mecânico inicia a execução do reparo com status "IN_REPAIR"
     Então o status da execução deve ser atualizado para "IN_REPAIR"
 
     # --- 3. Finalização Técnica e Timestamp de Conclusão ---
-    Quando finaliza atualizando o status da execução para "COMPLETED"
+    Quando o mecânico conclui a execução do reparo com status "COMPLETED"
     Então a ordem de execução deve ter o status "COMPLETED" e registrar a data de conclusão

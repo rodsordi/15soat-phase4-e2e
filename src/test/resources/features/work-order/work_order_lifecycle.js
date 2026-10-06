@@ -52,7 +52,7 @@ export default function () {
     http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, diagPayload, params);
 
     // 4. Budget
-    const budgetPayload = JSON.stringify({ status: 'WAITING_FOR_APPROVAL', totalAmount: 450.0 });
+    const budgetPayload = JSON.stringify({ status: 'WAITING_APPROVAL', totalAmount: 450.0 });
     http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, budgetPayload, params);
 
     // 5. Approve
@@ -63,8 +63,8 @@ export default function () {
     });
 
     // 6. Finish & Release
-    http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, JSON.stringify({ status: 'FINISHED' }), params);
-    http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, JSON.stringify({ status: 'RELEASED' }), params);
+    http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, JSON.stringify({ status: 'COMPLETED' }), params);
+    http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, JSON.stringify({ status: 'DELIVERED' }), params);
   }
 
   // 7. Metrics Query

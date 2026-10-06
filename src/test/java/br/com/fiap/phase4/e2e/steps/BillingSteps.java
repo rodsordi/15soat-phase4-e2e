@@ -52,6 +52,13 @@ public class BillingSteps {
         }
     }
 
+    @Quando("a fatura é emitida com os seguintes dados:")
+    public void anInvoiceIsCreatedFromTable(Map<String, String> data) {
+        double amount = Double.parseDouble(data.get("amount"));
+        String customerDocument = data.get("customerDocument");
+        anInvoiceIsCreated(amount, customerDocument);
+    }
+
     @Entao("a fatura deve ser criada com o status {string}")
     public void theInvoiceShouldBeCreatedWithStatus(String expectedStatus) {
         if (response != null && (response.getStatusCode() == 200 || response.getStatusCode() == 201)) {
@@ -86,7 +93,7 @@ public class BillingSteps {
             Response getResponse = RestAssured.given()
                     .get("/api/v1/invoices/" + invoiceId);
             if (getResponse.getStatusCode() == 200) {
-                assertThat(getResponse.jsonPath().getString("status")).isIn(expectedStatus, "PENDING", "PAID", "FAILED");
+                assertThat(getResponse.jsonPath().getString("status")).isEqualTo(expectedStatus);
             }
         }
     }

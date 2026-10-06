@@ -32,10 +32,10 @@ sequenceDiagram
     Kong-->>Cliente: Retorna 200 OK
 
     %% 3. Orçamento
-    Note over Cliente,WO: 3. Conclusão do Orçamento (Status: WAITING_FOR_APPROVAL)
-    Cliente->>Kong: PATCH /api/v1/work-orders/{id}/status<br/>{ status: "WAITING_FOR_APPROVAL", totalAmount: 450.00 }
+    Note over Cliente,WO: 3. Conclusão do Orçamento (Status: WAITING_APPROVAL)
+    Cliente->>Kong: PATCH /api/v1/work-orders/{id}/status<br/>{ status: "WAITING_APPROVAL", totalAmount: 450.00 }
     Kong->>WO: Proxy HTTP Request
-    WO->>WO: Atualiza status para WAITING_FOR_APPROVAL
+    WO->>WO: Atualiza status para WAITING_APPROVAL
     WO-->>Kong: Retorna 200 OK
     Kong-->>Cliente: Retorna 200 OK
 
@@ -49,18 +49,18 @@ sequenceDiagram
     Kong-->>Cliente: Retorna 200 OK
 
     %% 5. Finalização
-    Note over Cliente,WO: 5. Conclusão dos Serviços (Status: FINISHED)
-    Cliente->>Kong: PATCH /api/v1/work-orders/{id}/status<br/>{ status: "FINISHED" }
+    Note over Cliente,WO: 5. Conclusão dos Serviços (Status: COMPLETED)
+    Cliente->>Kong: PATCH /api/v1/work-orders/{id}/status<br/>{ status: "COMPLETED" }
     Kong->>WO: Proxy HTTP Request
-    WO->>WO: Atualiza status para FINISHED
+    WO->>WO: Atualiza status para COMPLETED
     WO-->>Kong: Retorna 200 OK
     Kong-->>Cliente: Retorna 200 OK
 
     %% 6. Liberação
-    Note over Cliente,WO: 6. Retirada e Liberação do Veículo (Status: RELEASED)
-    Cliente->>Kong: PATCH /api/v1/work-orders/{id}/status<br/>{ status: "RELEASED" }
+    Note over Cliente,WO: 6. Retirada e Liberação do Veículo (Status: DELIVERED)
+    Cliente->>Kong: PATCH /api/v1/work-orders/{id}/status<br/>{ status: "DELIVERED" }
     Kong->>WO: Proxy HTTP Request
-    WO->>WO: Atualiza status para RELEASED
+    WO->>WO: Atualiza status para DELIVERED
     WO-->>Kong: Retorna 200 OK
     Kong-->>Cliente: Retorna 200 OK
 

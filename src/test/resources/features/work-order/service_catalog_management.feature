@@ -12,10 +12,42 @@ Funcionalidade: Gestão do Catálogo de Serviços
     Dado que o serviço de Ordem de Serviço está em execução e operacional
 
   # ============================================================================
-  # Cenário 1: Cadastro e Consulta de Serviço no Catálogo
+  # Cenário 1: Cadastro de Serviço no Catálogo
   # ============================================================================
   @cadastro-servico
-  Cenário: Cadastro de novo serviço no catálogo da oficina com sucesso
-    Quando um novo serviço com código "SRV-OIL-01", nome "Troca de Óleo e Filtro" e preço 150.00 é cadastrado
+  Cenário: Cadastro de serviço no catálogo
+    Dado o serviço com os seguintes dados:
+      | code  | SRV-OIL-01             |
+      | name  | Troca de Óleo e Filtro |
+      | price | 150.00                 |
+    Quando o serviço é cadastrado no catálogo
     Então o serviço deve ser registrado com sucesso no catálogo
-    E a consulta do serviço pelo código "SRV-OIL-01" deve retornar o preço 150.00
+
+  # ============================================================================
+  # Cenário 2: Consulta de Serviço no Catálogo por Código
+  # ============================================================================
+  @consulta-servico
+  Cenário: Consulta de serviço no catálogo por código
+    Dado o serviço com código "SRV-OIL-01" cadastrado no catálogo
+    Quando o serviço com código "SRV-OIL-01" é consultado
+    Então a consulta deve retornar os seguintes dados do serviço:
+      | code  | SRV-OIL-01             |
+      | name  | Troca de Óleo e Filtro |
+      | price | 150.00                 |
+
+  # ============================================================================
+  # Cenário 3: Tentativa de Cadastro de Serviço com Código Duplicado (Sad Path)
+  # ============================================================================
+  @excecao @servico-duplicado
+  Cenário: Rejeição ao cadastrar serviço com código já existente
+    Dado o serviço com código "SRV-OIL-01" cadastrado no catálogo
+    E o serviço com os seguintes dados:
+      | code  | SRV-OIL-01             |
+      | name  | Troca de Óleo Repetida |
+      | price | 160.00                 |
+    Quando o serviço é cadastrado no catálogo
+    Então o erro retornado deve corresponder a:
+      | status    | 409                                           |
+      | errorCode | RESOURCE_ALREADY_EXISTS                       |
+      | title     | Resource Conflict                             |
+      | detail    | Service with code SRV-OIL-01 already exists   |

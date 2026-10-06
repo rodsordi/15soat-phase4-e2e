@@ -128,7 +128,7 @@ public class E2ESagaSteps {
         RestAssured.baseURI = EnvironmentConfig.getWorkOrderBaseUrl();
         Response woResp = RestAssured.given().get("/api/v1/work-orders/" + workOrderId);
         if (woResp.getStatusCode() == 200) {
-            assertThat(woResp.jsonPath().getString("status")).isIn(expectedStatus, "RECEIVED", "APPROVED");
+            assertThat(woResp.jsonPath().getString("status")).isEqualTo(expectedStatus);
         }
     }
 
@@ -152,7 +152,7 @@ public class E2ESagaSteps {
         RestAssured.baseURI = EnvironmentConfig.getWorkOrderBaseUrl();
         Response woResp = RestAssured.given().get("/api/v1/work-orders/" + workOrderId);
         if (woResp.getStatusCode() == 200) {
-            assertThat(woResp.jsonPath().getString("status")).isNotNull();
+            assertThat(woResp.jsonPath().getString("status")).isEqualTo(expectedStatus);
         }
     }
 }

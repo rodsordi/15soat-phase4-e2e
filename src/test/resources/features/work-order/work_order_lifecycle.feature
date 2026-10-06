@@ -26,21 +26,21 @@ Funcionalidade: Ciclo de Vida Completo da Ordem de Serviço
     Quando o mecânico inicia o diagnóstico da Ordem de Serviço
     Então o status da Ordem de Serviço deve ser atualizado para "DIAGNOSING"
 
-    # --- 3. Conclusão do Orçamento e Notificação ao Cliente (WAITING_FOR_APPROVAL) ---
+    # --- 3. Conclusão do Orçamento e Notificação ao Cliente (WAITING_APPROVAL) ---
     Quando o diagnóstico é concluído e aguarda aprovação do cliente com valor total de 450.00
-    Então o status da Ordem de Serviço deve ser atualizado para "WAITING_FOR_APPROVAL"
+    Então o status da Ordem de Serviço deve ser atualizado para "WAITING_APPROVAL"
 
     # --- 4. Aprovação do Orçamento e Autorização de Produção (APPROVED) ---
     Quando o gestor da oficina atualiza o status da Ordem de Serviço para "APPROVED" com valor total de 450.00
     Então o status da Ordem de Serviço deve ser atualizado para "APPROVED"
 
-    # --- 5. Execução dos Reparos e Finalização dos Serviços (FINISHED) ---
+    # --- 5. Execução dos Reparos e Finalização dos Serviços (COMPLETED) ---
     Quando todos os reparos técnicos são concluídos na oficina
-    Então o status da Ordem de Serviço deve ser atualizado para "FINISHED"
+    Então o status da Ordem de Serviço deve ser atualizado para "COMPLETED"
 
-    # --- 6. Retirada e Liberação do Veículo ao Cliente (RELEASED) ---
+    # --- 6. Retirada e Liberação do Veículo ao Cliente (DELIVERED) ---
     Quando o veículo é liberado para o cliente
-    Então o status da Ordem de Serviço deve ser atualizado para "RELEASED"
+    Então o status da Ordem de Serviço deve ser atualizado para "DELIVERED"
 
     # --- 7. Fechamento de Métricas e Tempo Médio de Execução ---
     Quando a rotina de tempo médio de execução é acionada

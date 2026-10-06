@@ -17,7 +17,10 @@ Funcionalidade: Gestão de Materiais de Estoque e Checklists Técnicos
   # ============================================================================
   @cadastro-material
   Cenário: Registro de material e insumo utilizado no reparo
-    Quando um novo material com código "PART-BRK-01", descrição "Pastilha de Freio Dianteira" e quantidade 2 é registrado
+    Quando o material com os seguintes dados é registrado na manutenção:
+      | materialCode | PART-BRK-01                |
+      | description  | Pastilha de Freio Dianteira|
+      | quantity     | 2                          |
     Então o material deve ser computado com sucesso na manutenção
 
   # ============================================================================
@@ -25,6 +28,8 @@ Funcionalidade: Gestão de Materiais de Estoque e Checklists Técnicos
   # ============================================================================
   @checklist-inspecao
   Cenário: Preenchimento e validação de checklist de inspeção veicular
-    Quando o mecânico registra o item de checklist "Verificar fluido de freio" como concluído
-    E o mecânico registra o item de checklist "Inspecionar suspensão e amortecedores" como concluído
+    Quando o mecânico registra os seguintes itens de checklist:
+      | task                                | completed |
+      | Verificar fluido de freio           | true      |
+      | Inspecionar suspensão e amortecedor | true      |
     Então os itens de checklist devem ser persistidos com sucesso no MongoDB

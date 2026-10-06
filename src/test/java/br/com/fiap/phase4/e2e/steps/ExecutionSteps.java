@@ -47,6 +47,14 @@ public class ExecutionSteps {
                 .post("/api/v1/executions/" + executionId + "/materials");
     }
 
+    @Quando("o material com os seguintes dados é registrado na manutenção:")
+    public void registerMaterialFromTable(Map<String, String> data) {
+        String code = data.get("materialCode");
+        String desc = data.get("description");
+        int qty = Integer.parseInt(data.get("quantity"));
+        registerMaterial(code, desc, qty);
+    }
+
     @Entao("o material deve ser computado com sucesso na manutenção")
     public void materialComputedSuccessfully() {
         if (response != null && (response.getStatusCode() == 200 || response.getStatusCode() == 201)) {
@@ -99,6 +107,14 @@ public class ExecutionSteps {
                 .post("/api/v1/executions/" + executionId + "/checklist");
     }
 
+    @Quando("o mecânico registra os seguintes itens de checklist:")
+    public void mechanicRecordsChecklistItems(io.cucumber.datatable.DataTable dataTable) {
+        java.util.List<Map<String, String>> rows = dataTable.asMaps(String.class, String.class);
+        for (Map<String, String> row : rows) {
+            mechanicRecordsChecklist(row.get("task"));
+        }
+    }
+
     @Entao("os itens de checklist devem ser persistidos com sucesso no MongoDB")
     public void checklistPersistedSuccessfully() {
         if (response != null && (response.getStatusCode() == 200 || response.getStatusCode() == 201)) {
@@ -107,6 +123,7 @@ public class ExecutionSteps {
     }
 
     @Quando("atualiza o status da execução para {string}")
+    @Quando("o mecânico inicia a execução do reparo com status {string}")
     public void updatesExecutionStatus(String status) {
         if (executionId == null) {
             executionId = UUID.randomUUID().toString();
@@ -131,6 +148,7 @@ public class ExecutionSteps {
     }
 
     @Quando("finaliza atualizando o status da execução para {string}")
+    @Quando("o mecânico conclui a execução do reparo com status {string}")
     public void finallyUpdatesExecutionStatus(String status) {
         updatesExecutionStatus(status);
     }

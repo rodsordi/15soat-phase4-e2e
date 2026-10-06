@@ -16,7 +16,8 @@ Funcionalidade: Geração de Faturas e Checkout de Pagamento
   # ============================================================================
   @geracao-fatura
   Cenário: Emissão de fatura com cálculo financeiro e preferência de pagamento
-    # --- 1. Emissão da Fatura e Integração com Checkout ---
-    Quando uma fatura é criada para a Ordem de Serviço com o valor 350.00 e cliente "52998224725"
+    Quando a fatura é emitida com os seguintes dados:
+      | customerDocument | 52998224725 |
+      | amount           | 350.00      |
     Então a fatura deve ser criada com o status "PENDING"
     E a preferência de pagamento deve conter um link de checkout válido

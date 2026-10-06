@@ -42,6 +42,23 @@ sequenceDiagram
     DB-->>WO: Confirma persistência
     WO-->>Kong: Retorna 201 Created (VehicleResponse)
     Kong-->>Atendente: Retorna 201 Created
+
+    %% Múltiplos Veículos (1:N)
+    Note over Atendente,DB: 4. Vínculo de Segundo Veículo ao Mesmo Cliente (1:N)
+    Atendente->>Kong: POST /api/v1/vehicles<br/>{ licensePlate: "XYZ9F88", customerDocument: "52998224725", make: "Honda", model: "Civic" }
+    Kong->>WO: Proxy HTTP Request
+    WO->>DB: Persiste segundo veículo associado ao mesmo customer_id
+    DB-->>WO: Confirma persistência relacional (1:N)
+    WO-->>Kong: Retorna 201 Created (VehicleResponse)
+    Kong-->>Atendente: Retorna 201 Created
+
+    %% Sad Paths / Regras de Integridade
+    Note over Atendente,DB: 5. Tratamento de Exceções de Domínio (Sad Paths)
+    Atendente->>Kong: POST /api/v1/vehicles (Cliente Inexistente ou Placa Duplicada)
+    Kong->>WO: Proxy HTTP Request
+    WO->>DB: Consulta integridade cadastral
+    WO-->>Kong: Retorna 400 Bad Request (ProblemDetail + errorCode)
+    Kong-->>Atendente: Retorna 400 Bad Request
 ```
 
 </div>
