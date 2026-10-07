@@ -20,15 +20,17 @@ sequenceDiagram
     participant WO as API Work Order<br/>(Spring Boot 4 / PG)
     participant DB as PostgreSQL<br/>(work_order_db)
 
+    Note over Ator,Kong: 🔒 Sessão Autenticada: Requisições utilizam Bearer JWT (Role: EMPLOYEE)
+
     %% 1. Onboarding Serverless com Saga Orquestrada
     Note over Ator,DB: 1. Atendente Cadastra Cliente na Recepção (Saga Orquestrada: Keycloak + API)
-    Ator->>+Lambda: POST /users<br/>Header: Authorization: Bearer Employee_JWT<br/>{ document: "52998224725",<br/>  name, email, password }
+    Ator->>+Lambda: POST /users<br/>{ document: "52998224725",<br/>  name, email, password }
     Lambda->>Lambda: Valida role EMPLOYEE<br/>e algoritmo Módulo 11 (CPF)
     Lambda->>+KC: POST /admin/realms/garage/users<br/>(Cria identidade com Unified ID)
     KC-->>-Lambda: 201 Created (userId: uuid)
     Lambda->>+Kong: POST /api/v1/customers<br/>{ id: uuid, document, name, email }
-    Kong->>+WO: Proxy Request
-    WO->>+DB: INSERT INTO customers
+    Kong->>+WO: Encaminha requisição autenticada
+    WO->>+DB: Persiste cadastro do cliente
     DB-->>-WO: Confirma persistência
     WO-->>-Kong: 201 Created (CustomerResponse)
     Kong-->>-Lambda: 201 Created
@@ -40,8 +42,8 @@ sequenceDiagram
     Lambda->>+KC: POST /admin/realms/garage/users
     KC-->>-Lambda: 201 Created (userId: uuid)
     Lambda->>+Kong: POST /api/v1/customers
-    Kong->>+WO: Proxy Request
-    WO->>+DB: INSERT INTO customers
+    Kong->>+WO: Encaminha requisição autenticada
+    WO->>+DB: Persiste cadastro do cliente
     DB-->>-WO: Falha / Conflito no banco
     WO-->>-Kong: 500 / 409 Error
     Kong-->>-Lambda: 500 / 409 Error
@@ -60,12 +62,9 @@ sequenceDiagram
 
     %% 4. Gestão Autenticada de Veículos via API Gateway
     Note over Ator,DB: 4. Cadastro e Associação de Veículo via API Gateway (Bearer JWT)
-    Ator->>+Kong: POST /api/v1/vehicles<br/>Header: Authorization: Bearer JWT<br/>{ licensePlate: "BRA2E19", customerDocument, make, model }
-    Kong->>Kong: Valida assinatura do JWT (JWKS do Keycloak)
-    Kong->>+WO: Encaminha requisição com contexto de usuário
-    WO->>+DB: SELECT customer_id FROM customers WHERE document = ?
-    DB-->>-WO: Customer encontrado
-    WO->>+DB: INSERT INTO vehicles (plate, customer_id, make, model)
+    Ator->>+Kong: POST /api/v1/vehicles<br/>{ licensePlate: "BRA2E19", customerDocument, make, model }
+    Kong->>+WO: Encaminha requisição autenticada
+    WO->>+DB: Localiza cliente e persiste vínculo do veículo
     DB-->>-WO: Confirma persistência
     WO-->>-Kong: 201 Created (VehicleResponse)
     Kong-->>-Ator: 201 Created
@@ -73,11 +72,40 @@ sequenceDiagram
     %% 5. Sad Paths de Veículo
     Note over Ator,DB: 5. Tratamento de Exceções de Domínio de Veículo
     Ator->>+Kong: POST /api/v1/vehicles<br/>(Placa duplicada ou cliente inexistente)
-    Kong->>+WO: Proxy Request (JWT válido)
+    Kong->>+WO: Encaminha requisição autenticada
     WO->>+DB: Consulta integridade cadastral
     DB-->>-WO: Registro não encontrado / Placa já existe
     WO-->>-Kong: Retorna 400/409 (ProblemDetail RFC 7807)
     Kong-->>-Ator: Retorna 400/409 Bad Request
+
+    %% 6. Atualização Parcial de Cliente via PATCH RESTful
+    Note over Ator,DB: 6. Atualização Parcial de Cliente via PATCH RESTful
+    Ator->>+Kong: PATCH /api/v1/customers/{id}<br/>{ name, email }
+    Kong->>+WO: Encaminha PATCH autenticado
+    WO->>+DB: Atualiza campos cadastrais e renova updatedAt
+    DB-->>-WO: Confirma atualização
+    WO-->>-Kong: 200 OK (CustomerResponse com updatedAt)
+    Kong-->>-Ator: 200 OK
+
+    %% 7. Exclusão Segura por Identificador Canônico (DELETE /{id})
+    Note over Ator,DB: 7. Exclusão de Recurso por Identificador Canônico (DELETE /{id})
+    Ator->>+Kong: DELETE /api/v1/customers/{id}
+    Kong->>+WO: Encaminha DELETE autenticado
+    WO->>+DB: Valida ausência de veículos e ordens ativas
+    DB-->>-WO: Sem impedimentos
+    WO->>+DB: Remove cliente da base
+    DB-->>-WO: Confirma exclusão
+    WO-->>-Kong: 204 No Content
+    Kong-->>-Ator: 204 No Content
+
+    %% 8. Bloqueio de Exclusão por Integridade Referencial (422 Unprocessable Entity)
+    Note over Ator,DB: 8. Bloqueio de Exclusão com Veículos Associados ou OS Ativas
+    Ator->>+Kong: DELETE /api/v1/customers/{id}
+    Kong->>+WO: Encaminha DELETE autenticado
+    WO->>+DB: Identifica veículos ou ordens em andamento vinculadas
+    DB-->>-WO: Violação de integridade de negócio
+    WO-->>-Kong: 422 Unprocessable Entity (ProblemDetail RFC 7807)
+    Kong-->>-Ator: 422 Unprocessable Entity
 ```
 
 </div>

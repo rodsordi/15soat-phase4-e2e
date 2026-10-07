@@ -10,37 +10,39 @@ Este diagrama documenta a entrada do veículo na fila de oficina, avanço de sta
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Mecanico as Mecânico /<br/>Técnico
+    actor Mecanico as Mecânico / Técnico<br/>(Funcionário: EMPLOYEE)
     participant Kong as Kong<br/>API Gateway
     participant Exec as API Exec<br/>(Spring Boot 4 / Mongo)
     participant Mongo as MongoDB<br/>(exec_db)
     participant Kafka as Apache Kafka<br/>Broker
 
+    Note over Mecanico,Kong: 🔒 Sessão Autenticada: Requisições utilizam Bearer JWT (Role: EMPLOYEE)
+
     %% Entrada na Fila
     Note over Mecanico,Mongo: 1. Entrada na Fila de Execução (Status: QUEUED)
-    Mecanico->>Kong: POST /api/v1/executions<br/>{ workOrderId, technicianId: "TECH-101" }
-    Kong->>Exec: Proxy HTTP Request
+    Mecanico->>+Kong: POST /api/v1/executions<br/>{ workOrderId, technicianId: "TECH-101" }
+    Kong->>+Exec: Proxy HTTP Request
     Exec->>Mongo: Salva documento com status QUEUED
     Exec->>Kafka: Publica ExecutionStartedEvent (Tópico: execution-events)
-    Exec-->>Kong: Retorna 201 Created (ExecutionResponse)
-    Kong-->>Mecanico: Retorna 201 Created
+    Exec-->>-Kong: Retorna 201 Created (ExecutionResponse)
+    Kong-->>-Mecanico: Retorna 201 Created
 
     %% Início dos Reparos
     Note over Mecanico,Mongo: 2. Transição para Reparo em Andamento (Status: IN_REPAIR)
-    Mecanico->>Kong: PATCH /api/v1/executions/{id}/status<br/>{ status: "IN_REPAIR" }
-    Kong->>Exec: Proxy HTTP Request
+    Mecanico->>+Kong: PATCH /api/v1/executions/{id}/status<br/>{ status: "IN_REPAIR" }
+    Kong->>+Exec: Proxy HTTP Request
     Exec->>Mongo: Atualiza status para IN_REPAIR
-    Exec-->>Kong: Retorna 200 OK
-    Kong-->>Mecanico: Retorna 200 OK
+    Exec-->>-Kong: Retorna 200 OK
+    Kong-->>-Mecanico: Retorna 200 OK
 
     %% Conclusão dos Reparos
     Note over Mecanico,Kafka: 3. Finalização Técnica e Notificação (Status: COMPLETED)
-    Mecanico->>Kong: PATCH /api/v1/executions/{id}/status<br/>{ status: "COMPLETED" }
-    Kong->>Exec: Proxy HTTP Request
+    Mecanico->>+Kong: PATCH /api/v1/executions/{id}/status<br/>{ status: "COMPLETED" }
+    Kong->>+Exec: Proxy HTTP Request
     Exec->>Mongo: Atualiza status para COMPLETED e completedAt
     Exec->>Kafka: Publica ExecutionCompletedEvent (Tópico: execution-events)
-    Exec-->>Kong: Retorna 200 OK
-    Kong-->>Mecanico: Retorna 200 OK
+    Exec-->>-Kong: Retorna 200 OK
+    Kong-->>-Mecanico: Retorna 200 OK
 ```
 
 </div>

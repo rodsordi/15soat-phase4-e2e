@@ -137,3 +137,46 @@ Funcionalidade: Gestão de Clientes e Veículos Vinculados
     Dado que o operador não possui token de autenticação válido
     Quando o cliente com documento "52998224725", nome "Anônimo" e email "anonimo@fiap.com.br" tenta ser cadastrado
     Então o código de status HTTP da resposta deve ser 401
+
+  # ============================================================================
+  # Cenário 10: Atualização Parcial de Cliente via PATCH RESTful
+  # ============================================================================
+  @atualizacao-cliente @patch
+  Cenário: Atualização cadastral de cliente via PATCH
+    Dado o cliente com documento "52998224725" cadastrado
+    Quando o cliente com documento "52998224725" tem seu nome atualizado para "Rodrigo Sordi Atualizado"
+    Então a consulta deve retornar os seguintes dados do cliente:
+      | document | 52998224725                |
+      | name     | Rodrigo Sordi Atualizado   |
+      | email    | rodrigo@fiap.com.br        |
+
+  # ============================================================================
+  # Cenário 11: Exclusão Segura de Veículo por Identificador Canônico (DELETE /{id})
+  # ============================================================================
+  @exclusao-veiculo @delete
+  Cenário: Exclusão de veículo sem ordens de serviço ativas por ID
+    Dado um cliente cadastrado com documento "52998224725" e veículo "XYZ9F88"
+    Quando o veículo com placa "XYZ9F88" é excluído por seu identificador único
+    Então a resposta de exclusão deve retornar o código HTTP 204
+
+  # ============================================================================
+  # Cenário 12: Exclusão Segura de Cliente sem Vínculos por Identificador Canônico (DELETE /{id})
+  # ============================================================================
+  @exclusao-cliente @delete
+  Cenário: Exclusão de cliente sem veículos e sem ordens de serviço por ID
+    Dado o cliente com documento "12345678909" cadastrado sem veículos
+    Quando o cliente com documento "12345678909" é excluído por seu identificador único
+    Então a resposta de exclusão deve retornar o código HTTP 204
+
+  # ============================================================================
+  # Cenário 13: Bloqueio de Exclusão de Cliente com Veículos Associados (422 Unprocessable Entity)
+  # ============================================================================
+  @excecao @exclusao-cliente-com-veiculos
+  Cenário: Rejeição ao excluir cliente que ainda possui veículos vinculados
+    Dado um cliente cadastrado com documento "52998224725" e veículo "BRA2E19"
+    Quando o cliente com documento "52998224725" tenta ser excluído por seu identificador único
+    Então o erro retornado deve corresponder a:
+      | status    | 422                                                                             |
+      | errorCode | CUSTOMER_HAS_VEHICLES                                                           |
+      | title     | Business Rule Violation                                                         |
+      | detail    | Customer has associated vehicles and cannot be deleted. Remove vehicles first. |

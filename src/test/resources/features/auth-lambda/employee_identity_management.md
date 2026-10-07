@@ -18,9 +18,11 @@ sequenceDiagram
     participant KC as Keycloak IdP<br/>(Realm: garage)
     participant KCDB as PostgreSQL<br/>(keycloak_db)
 
+    Note over Admin,Lambda: 🔒 Sessão Autenticada: Requisições utilizam Bearer JWT (Role: ADMIN)
+
     %% 1. Cadastro de Funcionário pelo Administrador
     Note over Admin,KCDB: 1. Provisionamento de Colaborador no Keycloak (IAM)
-    Admin->>+Lambda: POST /users<br/>Header: Authorization: Bearer Admin_JWT<br/>{ role: "EMPLOYEE", name: "Carlos",<br/>  document: "86266070087", email, password }
+    Admin->>+Lambda: POST /users<br/>{ role: "EMPLOYEE", name: "Carlos",<br/>  document: "86266070087", email, password }
     Lambda->>Lambda: Valida role ADMIN do solicitante<br/>e algoritmo Módulo 11 (CPF)
     Lambda->>+KC: POST /admin/realms/garage/users<br/>(Bearer Admin Token)
     KC->>+KCDB: Persiste credenciais,<br/>atributos e role EMPLOYEE

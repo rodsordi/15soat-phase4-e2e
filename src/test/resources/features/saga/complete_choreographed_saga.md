@@ -10,7 +10,7 @@ Este diagrama documenta a coordenação distribuída assíncrona orientada a eve
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Cliente as Cliente /<br/>Operador
+    actor Atendente as Atendente<br/>(Recepção: EMPLOYEE)
     participant Kong as Kong<br/>API Gateway
     participant OS as API Ordem de Serviço<br/>(PostgreSQL)
     participant Kafka as Apache Kafka<br/>Broker
@@ -18,47 +18,56 @@ sequenceDiagram
     participant MP as Mercado Pago<br/>Gateway
     participant Exec as API Execução & Oficina<br/>(MongoDB)
 
+    Note over Atendente,Kong: 🔒 Sessão Autenticada: Requisições utilizam Bearer JWT (Role: EMPLOYEE)
+
     %% Abertura
-    Note over Cliente,OS: 1. Abertura da Ordem de Serviço
-    Cliente->>Kong: POST /api/v1/work-orders<br/>{ customerDocument, licensePlate, description }
-    Kong->>OS: Proxy Request
+    Note over Atendente,OS: 1. Abertura da Ordem de Serviço
+    Atendente->>+Kong: POST /api/v1/work-orders<br/>{ customerDocument, licensePlate, description }
+    Kong->>+OS: Proxy Request
     OS->>OS: Salva OS no PG (Status: RECEIVED)
-    OS-->>Cliente: 201 Created (workOrderId)
+    OS-->>-Kong: 201 Created (workOrderId)
+    Kong-->>-Atendente: 201 Created
 
     %% Aprovação
-    Note over Cliente,Kafka: 2. Aprovação de Orçamento
-    Cliente->>Kong: PATCH /api/v1/work-orders/{id}/status<br/>{ status: "APPROVED", totalAmount: 500.00 }
-    Kong->>OS: Proxy Request
+    Note over Atendente,Kafka: 2. Aprovação de Orçamento
+    Atendente->>+Kong: PATCH /api/v1/work-orders/{id}/status<br/>{ status: "APPROVED", totalAmount: 500.00 }
+    Kong->>+OS: Proxy Request
     OS->>OS: Atualiza OS (Status: APPROVED)
     OS->>Kafka: Publica WorkOrderApprovedEvent (Tópico: work-order-events)
-    OS-->>Cliente: 200 OK
+    OS-->>-Kong: 200 OK
+    Kong-->>-Atendente: 200 OK
 
     %% Faturamento e Pagamento
     Note over Kafka,MP: 3. Geração de Fatura e Liquidação Mercado Pago
-    Kafka->>Billing: Consome WorkOrderApprovedEvent
-    Billing->>MP: Gera checkout / QR Code Pix
-    MP-->>Billing: Retorna checkout URL
+    Kafka->>+Billing: Consome WorkOrderApprovedEvent
+    Billing->>+MP: Gera checkout / QR Code Pix
+    MP-->>-Billing: Retorna checkout URL
     Billing->>Billing: Salva Fatura no PG (Status: PENDING)
-    MP->>Kong: POST /api/v1/payments/webhook<br/>{ action: "payment.updated", status: "approved" }
-    Kong->>Billing: Proxy Request
+    Billing-->>-Kafka: Fatura registrada
+    MP->>+Kong: POST /api/v1/payments/webhook<br/>{ action: "payment.updated", status: "approved" }
+    Kong->>+Billing: Proxy Request
     Billing->>Billing: Atualiza Fatura (Status: PAID)
     Billing->>Kafka: Publica PaymentConfirmedEvent (Tópico: payment-events)
-    Billing-->>MP: 200 OK
+    Billing-->>-Kong: 200 OK
+    Kong-->>-MP: 200 OK
 
     %% Execução na Oficina
     Note over Kafka,OS: 4. Execução dos Reparos e Finalização
-    Kafka->>Exec: Consome PaymentConfirmedEvent
+    Kafka->>+Exec: Consome PaymentConfirmedEvent
     Exec->>Exec: Enfileira OS no MongoDB (Status: QUEUED)
     Exec->>Kafka: Publica ExecutionStartedEvent
     Exec->>Exec: Mecânico executa reparos (Status: COMPLETED)
     Exec->>Kafka: Publica ExecutionCompletedEvent (Tópico: execution-events)
+    Exec-->>-Kafka: Execução concluída
 
     %% Conclusão Final
-    Kafka->>OS: Consome ExecutionCompletedEvent
+    Kafka->>+OS: Consome ExecutionCompletedEvent
     OS->>OS: Atualiza OS para COMPLETED no PostgreSQL
-    Cliente->>Kong: GET /api/v1/work-orders/{id}
-    Kong->>OS: Consulta OS
-    OS-->>Cliente: 200 OK (Status: COMPLETED)
+    OS-->>-Kafka: OS atualizada
+    Atendente->>+Kong: GET /api/v1/work-orders/{id}
+    Kong->>+OS: Consulta OS
+    OS-->>-Kong: 200 OK (Status: COMPLETED)
+    Kong-->>-Atendente: 200 OK (Status: COMPLETED)
 ```
 
 </div>

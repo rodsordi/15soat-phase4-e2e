@@ -136,7 +136,7 @@ public class WorkOrderSteps {
     @Quando("a consulta de cliente por documento {string} é realizada")
     @Quando("o cliente com documento {string} é consultado")
     public void executeCustomerQuery(String doc) {
-        response = RestAssured.given().get("/api/v1/customers/" + doc);
+        response = RestAssured.given().get("/api/v1/customers?document=" + doc);
     }
 
     @Entao("a consulta deve retornar o nome {string}")
@@ -166,7 +166,7 @@ public class WorkOrderSteps {
 
     @E("a consulta de cliente por documento {string} deve retornar o nome {string}")
     public void getCustomerByDoc(String doc, String expectedName) {
-        Response getResp = RestAssured.given().get("/api/v1/customers/" + doc);
+        Response getResp = RestAssured.given().get("/api/v1/customers?document=" + doc);
         if (getResp.getStatusCode() == 200) {
             assertThat(getResp.jsonPath().getString("name")).isEqualTo(expectedName);
         }
@@ -227,7 +227,7 @@ public class WorkOrderSteps {
     @Quando("a consulta de veículo pela placa {string} é realizada")
     @Quando("o veículo com placa {string} é consultado")
     public void executeVehicleQuery(String plate) {
-        response = RestAssured.given().get("/api/v1/vehicles/" + plate);
+        response = RestAssured.given().get("/api/v1/vehicles?licensePlate=" + plate);
     }
 
     @Entao("a consulta de veículo deve confirmar o vínculo com o cliente {string}")
@@ -330,8 +330,7 @@ public class WorkOrderSteps {
                 "code", code,
                 "name", name,
                 "description", "Standardized service: " + name,
-                "price", price,
-                "estimatedMinutes", 45
+                "price", price
         );
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
@@ -470,7 +469,7 @@ public class WorkOrderSteps {
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body(payload)
-                .patch("/api/v1/materials/" + currentMaterialId + "/price");
+                .patch("/api/v1/materials/" + currentMaterialId);
     }
 
     @Entao("o novo preço {double} deve ser refletido com sucesso na consulta do material")
