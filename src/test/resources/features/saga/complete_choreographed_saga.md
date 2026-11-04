@@ -5,7 +5,13 @@
 Este diagrama documenta a coordenação distribuída assíncrona orientada a eventos via Apache Kafka entre os microsserviços `api-work-order`, `api-billing` e `api-exec` no fluxo feliz completo.
 
 <div style="overflow-x: auto; width: 100%;">
-<div style="min-width: 1100px;">
+<style>
+  .mermaid svg {
+    max-width: none !important;
+    min-width: 1750px !important;
+    width: 1750px !important;
+  }
+</style>
 
 ```mermaid
 sequenceDiagram
@@ -30,7 +36,7 @@ sequenceDiagram
 
     %% Aprovação
     Note over Atendente,Kafka: 2. Aprovação de Orçamento
-    Atendente->>+Kong: PATCH /api/v1/work-orders/{id}/status<br/>{ status: "APPROVED", totalAmount: 500.00 }
+    Atendente->>+Kong: PATCH /api/v1/work-orders/{id}<br/>{ status: "APPROVED", totalAmount: 500.00 }
     Kong->>+OS: Proxy Request
     OS->>OS: Atualiza OS (Status: APPROVED)
     OS->>Kafka: Publica WorkOrderApprovedEvent (Tópico: work-order-events)
@@ -71,4 +77,4 @@ sequenceDiagram
 ```
 
 </div>
-</div>
+

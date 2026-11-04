@@ -5,7 +5,13 @@
 Este diagrama documenta o mecanismo transacional de compensação (Saga Rollback) disparado pelo Apache Kafka quando o pagamento é recusado, garantindo o cancelamento atômico da Ordem de Serviço.
 
 <div style="overflow-x: auto; width: 100%;">
-<div style="min-width: 950px;">
+<style>
+  .mermaid svg {
+    max-width: none !important;
+    min-width: 1550px !important;
+    width: 1550px !important;
+  }
+</style>
 
 ```mermaid
 sequenceDiagram
@@ -20,7 +26,7 @@ sequenceDiagram
     Note over Atendente,Kong: 🔒 Sessão Autenticada: Requisições utilizam Bearer JWT (Role: EMPLOYEE)
 
     Note over Atendente,Billing: 1. Ordem Aprovada e Fatura Gerada (Status: PENDING)
-    Atendente->>+Kong: PATCH /api/v1/work-orders/{id}/status<br/>{ status: "APPROVED", totalAmount: 450.00 }
+    Atendente->>+Kong: PATCH /api/v1/work-orders/{id}<br/>{ status: "APPROVED", totalAmount: 450.00 }
     Kong->>+OS: Proxy Request
     OS->>OS: Atualiza status para APPROVED
     OS->>Kafka: Publica WorkOrderApprovedEvent (Tópico: work-order-events)
@@ -46,4 +52,4 @@ sequenceDiagram
 ```
 
 </div>
-</div>
+

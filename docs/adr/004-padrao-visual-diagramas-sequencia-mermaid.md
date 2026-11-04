@@ -13,7 +13,7 @@ A implementação inicial apresentava os seguintes desafios visuais:
    - As linhas de vida dos componentes permaneciam tracejadas do início ao fim, sem indicar quando um componente estava ativamente alocando recursos, executando processamento ou aguardando resposta de I/O em banco de dados.
 
 ## Decisão
-Decidiu-se **padronizar a construção dos diagramas de sequência Mermaid** adotando as seguintes regras de apresentação visual:
+Decidiu-se **padronizar a construção e a renderização dos diagramas de sequência Mermaid** adotando as seguintes regras de apresentação visual:
 
 1. **Quebra de Linhas em Payloads e Mensagens (`<br/>`)**:
    - Todo payload JSON, parâmetros de chamada ou descrições extensas nas setas devem ser formatados com `<br/>` em linhas curtas e verticais.
@@ -21,7 +21,8 @@ Decidiu-se **padronizar a construção dos diagramas de sequência Mermaid** ado
      ```mermaid
      Atendente->>+Kong: POST /api/v1/customers<br/>{ document: "52998224725",<br/>  name, email }
      ```
-2. **Ativação e Desativação Visual de Threads (Activation Boxes)**:
+
+2. **Ativação e Desativação Visual de Threads (Activation Boxes Estritas a Sistemas)**:
    - Uso obrigatório dos operadores de sufixo `+` (ativação de thread no participante receptor) e `-` (desativação de thread na resposta/retorno) em todas as chamadas síncronas em cascata:
      - `Atendente->>+Kong: POST ...` (abre thread no gateway)
      - `Kong->>+WO: Proxy Request` (abre thread no microsserviço)
@@ -29,11 +30,37 @@ Decidiu-se **padronizar a construção dos diagramas de sequência Mermaid** ado
      - `DB-->>-WO: Confirmação` (fecha conexão com banco)
      - `WO-->>-Kong: Retorno HTTP` (fecha thread no microsserviço)
      - `Kong-->>-Atendente: Retorno final` (fecha thread no gateway)
-3. **Dimensionamento Proporcional da Largura Mínima (`min-width`)**:
-   - A largura mínima do container HTML deve ser calibrada proporcionalmente ao número de raias de participantes:
-     - **3 a 4 participantes**: `min-width: 700px` (ex: `customer_vehicle_management.md`).
-     - **5 participantes**: `min-width: 900px` a `950px` (ex: `execution_queue_and_repair.md`).
-     - **6 ou mais participantes / Sagas distribuídas**: `min-width: 1100px` (ex: `complete_choreographed_saga.md`).
+   - **Atores Humanos e Broker Kafka sem Threads**: Atores humanos (`Cliente`, `Atendente`, `Mecânico`) e o barramento assíncrono (`Kafka`) não representam processos de execução contínua de software, portanto **nunca** devem receber barras de ativação (`+`/`-`).
+
+3. **Fronteira Delimitada de Sessão Autenticada**:
+   - A nota de sessão autenticada deve delimitar com precisão a borda HTTP entre os atores chamadores e o Gateway:
+     - `Note over <Atores>,Kong: 🔒 Sessão Autenticada: Requisições utilizam Bearer JWT (Role: ...)`
+   - Deixar explícito que filas internas (Kafka) e bancos de dados não pertencem à sessão Bearer JWT.
+
+4. **Anulação de Compressão de SVG e Garantia de Rolagem Horizontal (IntelliJ IDEA & Browsers)**:
+   - Para impedir que IDEs (como IntelliJ IDEA / JCEF) ou visualizadores Markdown forcem `max-width: 100%` no SVG e reduzam as fontes a tamanhos ilegíveis, todo diagrama deve ser envolvido pelo seguinte padrão CSS:
+     ```html
+     <div style="overflow-x: auto; width: 100%;">
+     <style>
+       .mermaid svg {
+         max-width: none !important;
+         min-width: [LARGURA]px !important;
+         width: [LARGURA]px !important;
+       }
+     </style>
+
+     ```mermaid
+     sequenceDiagram
+     ...
+     ```
+     </div>
+     ```
+   - **Matriz de Dimensionamento por Quantidade de Participantes**:
+     - **3 a 4 participantes**: `1100px` (ex: `auth_token_authorizer.md`, `material_management.md`).
+     - **5 participantes**: `1300px` (ex: `employee_identity_management.md`, `execution_queue_and_repair.md`).
+     - **6 participantes**: `1550px` (ex: `customer_vehicle_management.md`, `compensating_saga_rollback.md`).
+     - **7 participantes**: `1750px` (ex: `complete_choreographed_saga.md`).
+     - **8 ou mais participantes / Sagas distribuídas com gateways externos**: `2000px` (ex: `work_order_lifecycle.md`).
 
 ## Consequências
 

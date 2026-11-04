@@ -40,7 +40,7 @@ export default function () {
 
     // 2. Approve Work Order
     const approvePayload = JSON.stringify({ status: 'APPROVED', totalAmount: 500.0 });
-    const approveRes = http.patch(`${BASE_URL}/api/v1/work-orders/${workOrderId}/status`, approvePayload, params);
+    const approveRes = http.patch(`${BASE_URL}/api/v1/work-orders/${workOrderId}`, approvePayload, params);
     check(approveRes, {
       'saga 2. approve status is 200': (r) => r.status === 200,
     });
@@ -80,7 +80,7 @@ export default function () {
 
     if (execRes.status === 201) {
       const execId = JSON.parse(execRes.body).id;
-      http.patch(`${BASE_URL}/api/v1/executions/${execId}/status`, JSON.stringify({ status: 'COMPLETED' }), params);
+      http.patch(`${BASE_URL}/api/v1/executions/${execId}`, JSON.stringify({ status: 'COMPLETED' }), params);
     }
 
     // 6. Verify final status

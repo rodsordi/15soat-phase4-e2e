@@ -5,7 +5,13 @@
 Este diagrama documenta o fluxo de emissão de faturas e integração com o Mercado Pago para disponibilização de checkout e QR Code Pix, com persistência no PostgreSQL.
 
 <div style="overflow-x: auto; width: 100%;">
-<div style="min-width: 900px;">
+<style>
+  .mermaid svg {
+    max-width: none !important;
+    min-width: 1300px !important;
+    width: 1300px !important;
+  }
+</style>
 
 ```mermaid
 sequenceDiagram
@@ -31,4 +37,4 @@ sequenceDiagram
 ```
 
 </div>
-</div>
+

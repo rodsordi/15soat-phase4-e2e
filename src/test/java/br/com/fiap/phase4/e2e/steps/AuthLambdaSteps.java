@@ -69,12 +69,20 @@ public class AuthLambdaSteps {
     public void adminRegistersEmployee(Map<String, String> data) {
         authServiceOperational();
         this.registeredEmployeeDocument = data.get("document");
-        Map<String, Object> payload = Map.of(
-                "name", data.get("name"),
-                "email", data.get("email"),
-                "document", data.get("document"),
-                "role", data.get("role"),
-                "password", data.get("password")
+        String payload = """
+                {
+                  "name": "%s",
+                  "email": "%s",
+                  "document": "%s",
+                  "role": "%s",
+                  "password": "%s"
+                }
+                """.formatted(
+                data.get("name"),
+                data.get("email"),
+                data.get("document"),
+                data.get("role"),
+                data.get("password")
         );
 
         response = RestAssured.given()
@@ -118,10 +126,12 @@ public class AuthLambdaSteps {
     @Quando("o funcionário tenta realizar autenticação com senha inválida:")
     public void employeeAuthenticates(Map<String, String> credentials) {
         authServiceOperational();
-        Map<String, Object> payload = Map.of(
-                "username", credentials.get("username"),
-                "password", credentials.get("password")
-        );
+        String payload = """
+                {
+                  "username": "%s",
+                  "password": "%s"
+                }
+                """.formatted(credentials.get("username"), credentials.get("password"));
 
         response = RestAssured.given()
                 .contentType(ContentType.JSON)

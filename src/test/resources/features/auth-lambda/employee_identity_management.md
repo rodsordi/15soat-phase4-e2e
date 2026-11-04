@@ -7,7 +7,13 @@ Este diagrama documenta o ciclo de vida do colaborador da oficina:
 2. **Autenticação OIDC & Emissão de JWT**: O colaborador realiza o login via `POST /auth/login`, obtendo o token JWT contendo as claims necessárias (`roles: ["EMPLOYEE"]`, `sub`, `preferred_username`) para operar o sistema no API Gateway.
 
 <div style="overflow-x: auto; width: 100%;">
-<div style="min-width: 800px;">
+<style>
+  .mermaid svg {
+    max-width: none !important;
+    min-width: 1300px !important;
+    width: 1300px !important;
+  }
+</style>
 
 ```mermaid
 sequenceDiagram
@@ -54,4 +60,4 @@ sequenceDiagram
 ```
 
 </div>
-</div>
+

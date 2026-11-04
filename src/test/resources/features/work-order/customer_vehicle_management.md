@@ -8,7 +8,13 @@ Este diagrama documenta o ciclo completo de onboarding de clientes e gestão de 
 3. **Gestão de Veículos e Operações Autenticadas**: Operações de negócio realizadas via **Kong API Gateway** utilizando token **Bearer JWT** emitido pelo Keycloak.
 
 <div style="overflow-x: auto; width: 100%;">
-<div style="min-width: 950px;">
+<style>
+  .mermaid svg {
+    max-width: none !important;
+    min-width: 1550px !important;
+    width: 1550px !important;
+  }
+</style>
 
 ```mermaid
 sequenceDiagram
@@ -109,4 +115,4 @@ sequenceDiagram
 ```
 
 </div>
-</div>
+

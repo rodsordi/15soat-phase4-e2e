@@ -40,7 +40,7 @@ export default function () {
 
     // 2. Approve Work Order
     const approvePayload = JSON.stringify({ status: 'APPROVED', totalAmount: 500.0 });
-    http.patch(`${BASE_URL}/api/v1/work-orders/${workOrderId}/status`, approvePayload, params);
+    http.patch(`${BASE_URL}/api/v1/work-orders/${workOrderId}`, approvePayload, params);
 
     // 3. Billing creates Invoice
     const invoicePayload = JSON.stringify({

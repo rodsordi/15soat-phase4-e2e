@@ -9,6 +9,8 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -30,6 +32,7 @@ public class WorkOrderSteps {
 
     @Dado("que o atendente da oficina está devidamente autenticado com perfil {string}")
     @Dado("que o atendente e o mecânico estão devidamente autenticados com perfil {string}")
+    @Dado("que o cliente está autenticado com perfil {string}")
     @Dado("que o operador de estoque está devidamente autenticado com perfil {string}")
     @Dado("que o administrador da oficina está devidamente autenticado com perfil {string}")
     public void attendantIsAuthenticatedWithRole(String role) {
@@ -46,11 +49,13 @@ public class WorkOrderSteps {
     @Quando("o cliente com documento {string}, nome {string} e email {string} tenta ser cadastrado")
     public void tryRegisterCustomerWithoutAuth(String document, String name, String email) {
         theWorkOrderServiceIsAvailable();
-        Map<String, Object> payload = Map.of(
-                "document", document,
-                "name", name,
-                "email", email
-        );
+        String payload = """
+                {
+                  "document": "%s",
+                  "name": "%s",
+                  "email": "%s"
+                }
+                """.formatted(document, name, email);
         var requestSpec = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body(payload);
@@ -104,11 +109,13 @@ public class WorkOrderSteps {
     public void registerCustomer(String document, String name, String email) {
         theWorkOrderServiceIsAvailable();
         this.customerDoc = document;
-        Map<String, Object> payload = Map.of(
-                "document", document,
-                "name", name,
-                "email", email
-        );
+        String payload = """
+                {
+                  "document": "%s",
+                  "name": "%s",
+                  "email": "%s"
+                }
+                """.formatted(document, name, email);
         var requestSpec = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body(payload);
@@ -172,17 +179,62 @@ public class WorkOrderSteps {
         }
     }
 
+    @Quando("o cliente com documento {string} tem seu nome atualizado para {string}")
+    public void updateCustomerName(String doc, String newName) {
+        theWorkOrderServiceIsAvailable();
+        String payload = """
+                {
+                  "name": "%s"
+                }
+                """.formatted(newName);
+        response = RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(payload)
+                .patch("/api/v1/customers/" + doc);
+    }
+
+    @Dado("o cliente com documento {string} cadastrado sem veículos")
+    public void customerRegisteredWithoutVehicles(String doc) {
+        theWorkOrderServiceIsAvailable();
+        this.customerDoc = doc;
+        registerCustomer(doc, "Cliente Sem Veiculo", "semveiculo@fiap.com.br");
+    }
+
+    @Quando("o cliente com documento {string} é excluído por seu identificador único")
+    @Quando("o cliente com documento {string} tenta ser excluído por seu identificador único")
+    public void deleteCustomerByDocument(String doc) {
+        theWorkOrderServiceIsAvailable();
+        response = RestAssured.given()
+                .delete("/api/v1/customers/" + doc);
+    }
+
+    @Quando("o veículo com placa {string} é excluído por seu identificador único")
+    public void deleteVehicleByPlate(String plate) {
+        theWorkOrderServiceIsAvailable();
+        response = RestAssured.given()
+                .delete("/api/v1/vehicles/" + plate);
+    }
+
+    @Entao("a resposta de exclusão deve retornar o código HTTP {int}")
+    public void deletionResponseShouldReturnStatus(int expectedStatus) {
+        if (response != null) {
+            assertThat(response.getStatusCode()).isEqualTo(expectedStatus);
+        }
+    }
+
     @Quando("um novo veículo com placa {string}, marca {string}, modelo {string} e ano {int} é vinculado ao cliente {string}")
     public void registerVehicle(String plate, String make, String model, int year, String doc) {
         theWorkOrderServiceIsAvailable();
         this.vehiclePlate = plate;
-        Map<String, Object> payload = Map.of(
-                "licensePlate", plate,
-                "customerDocument", doc,
-                "brand", make,
-                "model", model,
-                "year", year
-        );
+        String payload = """
+                {
+                  "licensePlate": "%s",
+                  "customerDocument": "%s",
+                  "brand": "%s",
+                  "model": "%s",
+                  "year": %d
+                }
+                """.formatted(plate, doc, make, model, year);
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body(payload)
@@ -196,13 +248,15 @@ public class WorkOrderSteps {
         this.vehiclePlate = plate;
         int year = Integer.parseInt(data.get("year"));
         String make = data.get("make") != null ? data.get("make") : data.get("brand");
-        Map<String, Object> payload = Map.of(
-                "licensePlate", plate,
-                "customerDocument", doc,
-                "brand", make,
-                "model", data.get("model"),
-                "year", year
-        );
+        String payload = """
+                {
+                  "licensePlate": "%s",
+                  "customerDocument": "%s",
+                  "brand": "%s",
+                  "model": "%s",
+                  "year": %d
+                }
+                """.formatted(plate, doc, make, data.get("model"), year);
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body(payload)
@@ -296,6 +350,17 @@ public class WorkOrderSteps {
         registerServiceInCatalog(code, "Troca de Óleo e Filtro", 150.00);
     }
 
+    @Dado("os seguintes serviços cadastrados no catálogo:")
+    public void ensureServicesExistInCatalog(List<Map<String, String>> services) {
+        theWorkOrderServiceIsAvailable();
+        services.forEach(s -> {
+            String code = s.get("code");
+            String name = s.get("name");
+            double price = Double.parseDouble(s.get("price"));
+            registerServiceInCatalog(code, name, price);
+        });
+    }
+
     @Quando("a consulta do serviço pelo código {string} é realizada")
     @Quando("o serviço com código {string} é consultado")
     public void executeServiceQuery(String code) {
@@ -326,12 +391,14 @@ public class WorkOrderSteps {
     @Quando("um novo serviço com código {string}, nome {string} e preço {double} é cadastrado")
     public void registerServiceInCatalog(String code, String name, double price) {
         theWorkOrderServiceIsAvailable();
-        Map<String, Object> payload = Map.of(
-                "code", code,
-                "name", name,
-                "description", "Standardized service: " + name,
-                "price", price
-        );
+        String payload = String.format(Locale.US, """
+                {
+                  "code": "%s",
+                  "name": "%s",
+                  "description": "Standardized service: %s",
+                  "price": %.2f
+                }
+                """, code, name, name, price);
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body(payload)
@@ -396,15 +463,17 @@ public class WorkOrderSteps {
     public void registerMaterialWithPricingAndStock(String code, String description, double cost, double price, int quantity) {
         theWorkOrderServiceIsAvailable();
 
-        Map<String, Object> payload = Map.of(
-                "sku", code,
-                "name", description,
-                "description", description,
-                "unitCost", cost,
-                "unitPrice", price,
-                "initialStock", quantity,
-                "minStock", 5
-        );
+        String payload = String.format(Locale.US, """
+                {
+                  "sku": "%s",
+                  "name": "%s",
+                  "description": "%s",
+                  "unitCost": %.2f,
+                  "unitPrice": %.2f,
+                  "initialStock": %d,
+                  "minStock": 5
+                }
+                """, code, description, description, cost, price, quantity);
 
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
@@ -459,12 +528,27 @@ public class WorkOrderSteps {
         }
     }
 
+    @Dado("os seguintes materiais cadastrados no catálogo:")
+    public void ensureMaterialsExistInCatalog(List<Map<String, String>> materials) {
+        theWorkOrderServiceIsAvailable();
+        materials.forEach(m -> {
+            String sku = m.get("sku");
+            String description = m.get("description");
+            double unitCost = m.get("unitCost") != null ? Double.parseDouble(m.get("unitCost")) : 30.0;
+            double unitPrice = Double.parseDouble(m.get("unitPrice"));
+            int quantity = Integer.parseInt(m.get("quantity"));
+            registerMaterialWithPricingAndStock(sku, description, unitCost, unitPrice, quantity);
+        });
+    }
+
     @Quando("o preço de venda do material {string} é atualizado para {double}")
     public void updateMaterialPrice(String sku, double newPrice) {
         theWorkOrderServiceIsAvailable();
-        Map<String, Object> payload = Map.of(
-                "unitPrice", newPrice
-        );
+        String payload = String.format(Locale.US, """
+                {
+                  "unitPrice": %.2f
+                }
+                """, newPrice);
 
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
@@ -485,11 +569,13 @@ public class WorkOrderSteps {
         theWorkOrderServiceIsAvailable();
         this.customerDoc = customerDocument;
         this.vehiclePlate = plate;
-        Map<String, Object> payload = Map.of(
-                "customerDocument", customerDocument,
-                "licensePlate", plate,
-                "description", description
-        );
+        String payload = """
+                {
+                  "customerDocument": "%s",
+                  "licensePlate": "%s",
+                  "description": "%s"
+                }
+                """.formatted(customerDocument, plate, description);
 
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
@@ -501,6 +587,15 @@ public class WorkOrderSteps {
         } else {
             workOrderId = UUID.randomUUID().toString();
         }
+    }
+
+    @Quando("o atendente abre uma nova Ordem de Serviço com os seguintes dados:")
+    public void attendantOpensWorkOrderWithDataTable(Map<String, String> data) {
+        customerRequestsWorkOrder(
+                data.get("customerDocument"),
+                data.get("licensePlate"),
+                data.get("description")
+        );
     }
 
     @Entao("a Ordem de Serviço deve ser criada com o status {string}")
@@ -526,52 +621,130 @@ public class WorkOrderSteps {
         }
     }
 
+    @E("a consulta da Ordem de Serviço por ID deve retornar os seguintes dados:")
+    public void retrievingWorkOrderByIdWithDataTable(Map<String, String> expectedFields) {
+        if (workOrderId == null) {
+            workOrderId = UUID.randomUUID().toString();
+            return;
+        }
+
+        Response getResponse = RestAssured.given()
+                .get("/api/v1/work-orders/" + workOrderId);
+
+        if (getResponse.getStatusCode() == 200) {
+            expectedFields.forEach((key, expectedValue) -> {
+                String actualValue = getResponse.jsonPath().getString(key);
+                assertThat(actualValue).isEqualTo(expectedValue);
+            });
+        }
+    }
+
     @Dado("uma Ordem de Serviço existente com o status {string}")
     public void existingWorkOrderWithStatus(String status) {
         theWorkOrderServiceIsAvailable();
         customerRequestsWorkOrder("52998224725", "BRA2E19", "Existing test work order");
+        if (!"RECEIVED".equalsIgnoreCase(status)) {
+            updateWorkOrderStatus(status);
+        }
     }
 
     @Quando("o mecânico inicia o diagnóstico da Ordem de Serviço")
     public void startDiagnosis() {
-        updateWorkOrderStatus("DIAGNOSING", 0.0);
+        updateWorkOrderStatus("DIAGNOSING");
     }
 
     @Quando("o diagnóstico é concluído e aguarda aprovação do cliente com valor total de {double}")
+    @Quando("o diagnóstico é concluído e o faturamento gera o orçamento com valor de {double}")
+    @Quando("o mecânico conclui o diagnóstico e o faturamento gera o orçamento com valor de {double}")
     public void finishBudget(double amount) {
-        updateWorkOrderStatus("WAITING_APPROVAL", amount);
+        updateWorkOrderStatus("WAITING_APPROVAL");
     }
 
-    @Quando("o gestor da oficina atualiza o status da Ordem de Serviço para {string} com valor total de {double}")
-    public void updateWorkOrderStatus(String newStatus, double amount) {
+    @Quando("o diagnóstico é concluído e o faturamento gera o orçamento")
+    @Quando("o mecânico conclui o diagnóstico e o faturamento gera o orçamento")
+    public void finishBudgetCalculated() {
+        updateWorkOrderStatus("WAITING_APPROVAL");
+    }
+
+    @Quando("o próprio cliente aprova o orçamento da Ordem de Serviço no valor de {double}")
+    public void customerApprovesBudget(double amount) {
+        updateWorkOrderStatus("APPROVED");
+    }
+
+    @Quando("o próprio cliente aprova o orçamento da Ordem de Serviço")
+    public void customerApprovesBudgetWithoutAmount() {
+        updateWorkOrderStatus("APPROVED");
+    }
+
+    @Quando("o próprio cliente rejeita o orçamento da Ordem de Serviço")
+    public void customerRejectsBudget() {
+        updateWorkOrderStatus("CANCELED");
+    }
+
+    public void updateWorkOrderStatus(String newStatus) {
         if (workOrderId == null) {
             workOrderId = UUID.randomUUID().toString();
         }
 
-        Map<String, Object> payload = Map.of(
-                "status", newStatus,
-                "totalAmount", amount
-        );
+        String payload = """
+                {
+                  "status": "%s"
+                }
+                """.formatted(newStatus);
 
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body(payload)
-                .patch("/api/v1/work-orders/" + workOrderId + "/status");
+                .patch("/api/v1/work-orders/" + workOrderId);
+    }
+
+    @Quando("o gestor da oficina atualiza o status da Ordem de Serviço para {string} com valor total de {double}")
+    public void updateWorkOrderStatus(String newStatus, double amount) {
+        updateWorkOrderStatus(newStatus);
+    }
+
+    @Quando("o mecânico inicia a execução dos reparos na oficina")
+    public void mechanicStartsRepair() {
+        updateWorkOrderStatus("EXECUTING");
     }
 
     @Quando("todos os reparos técnicos são concluídos na oficina")
+    @Quando("o mecânico conclui todos os reparos técnicos na oficina")
     public void repairsFinished() {
-        updateWorkOrderStatus("COMPLETED", 450.00);
+        updateWorkOrderStatus("COMPLETED");
+    }
+
+    @Quando("o cliente realiza o pagamento via Mercado Pago e o webhook confirma a liquidação")
+    public void customerPaysViaMercadoPago() {
+        updateWorkOrderStatus("PAID");
     }
 
     @Quando("o veículo é liberado para o cliente")
+    @Quando("o veículo quitado é liberado para o cliente")
+    @Quando("o atendente libera o veículo quitado para o cliente")
     public void vehicleReleased() {
-        updateWorkOrderStatus("DELIVERED", 450.00);
+        updateWorkOrderStatus("DELIVERED");
+    }
+
+    @Quando("o atendente tenta liberar o veículo para o cliente sem a confirmação do pagamento")
+    public void attendantTriesToReleaseVehicleWithoutPayment() {
+        if (workOrderId == null) {
+            workOrderId = UUID.randomUUID().toString();
+        }
+        String payload = """
+                {
+                  "status": "DELIVERED"
+                }
+                """;
+        response = RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(payload)
+                .patch("/api/v1/work-orders/" + workOrderId);
     }
 
     @Quando("a rotina de tempo médio de execução é acionada")
     public void calculateAverageExecutionTime() {
-        response = RestAssured.given().get("/api/v1/work-orders/metrics/average-time");
+        response = RestAssured.given().get("/api/v1/work-orders/metrics");
     }
 
     @Entao("o tempo médio do serviço deve ser apurado com sucesso")

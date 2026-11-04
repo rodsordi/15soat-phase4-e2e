@@ -30,11 +30,13 @@ public class E2ESagaSteps {
     @Quando("o atendente abre uma nova Ordem de Serviço para o veículo {string}")
     public void customerOpensWorkOrder(String plate) {
         RestAssured.baseURI = EnvironmentConfig.getWorkOrderBaseUrl();
-        Map<String, Object> payload = Map.of(
-                "customerDocument", "52998224725",
-                "licensePlate", plate,
-                "description", "Complete distributed saga flow"
-        );
+        String payload = """
+                {
+                  "customerDocument": "52998224725",
+                  "licensePlate": "%s",
+                  "description": "Complete distributed saga flow"
+                }
+                """.formatted(plate);
 
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
@@ -51,25 +53,28 @@ public class E2ESagaSteps {
     @E("o gestor da oficina aprova o orçamento da Ordem de Serviço")
     public void approveBudget() {
         RestAssured.baseURI = EnvironmentConfig.getWorkOrderBaseUrl();
-        Map<String, Object> payload = Map.of(
-                "status", "APPROVED",
-                "totalAmount", 500.00
-        );
+        String payload = """
+                {
+                  "status": "APPROVED"
+                }
+                """;
 
         RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body(payload)
-                .patch("/api/v1/work-orders/" + workOrderId + "/status");
+                .patch("/api/v1/work-orders/" + workOrderId);
     }
 
     @E("o serviço de Faturamento gera a fatura e o Mercado Pago confirma o pagamento")
     public void billingGeneratesInvoiceAndConfirms() {
         RestAssured.baseURI = EnvironmentConfig.getBillingBaseUrl();
-        Map<String, Object> invoicePayload = Map.of(
-                "workOrderId", workOrderId,
-                "customerDocument", "52998224725",
-                "amount", 500.00
-        );
+        String invoicePayload = """
+                {
+                  "workOrderId": "%s",
+                  "customerDocument": "52998224725",
+                  "amount": 500.00
+                }
+                """.formatted(workOrderId);
 
         Response invResp = RestAssured.given()
                 .contentType(ContentType.JSON)
@@ -81,11 +86,15 @@ public class E2ESagaSteps {
         }
 
         // Webhook Mercado Pago
-        Map<String, Object> webhookPayload = Map.of(
-                "action", "payment.updated",
-                "data", Map.of("id", "MP-" + UUID.randomUUID()),
-                "status", "approved"
-        );
+        String webhookPayload = """
+                {
+                  "action": "payment.updated",
+                  "data": {
+                    "id": "MP-%s"
+                  },
+                  "status": "approved"
+                }
+                """.formatted(UUID.randomUUID());
 
         RestAssured.given()
                 .contentType(ContentType.JSON)
@@ -96,11 +105,13 @@ public class E2ESagaSteps {
     @E("o serviço de Execução enfileira o veículo e conclui os reparos")
     public void execEnqueuesAndCompletes() {
         RestAssured.baseURI = EnvironmentConfig.getExecBaseUrl();
-        Map<String, Object> execPayload = Map.of(
-                "workOrderId", workOrderId,
-                "technicianId", "TECH-MASTER",
-                "notes", "Automated saga repair"
-        );
+        String execPayload = """
+                {
+                  "workOrderId": "%s",
+                  "technicianId": "TECH-MASTER",
+                  "notes": "Automated saga repair"
+                }
+                """.formatted(workOrderId);
 
         Response execResp = RestAssured.given()
                 .contentType(ContentType.JSON)
@@ -113,15 +124,17 @@ public class E2ESagaSteps {
             executionId = UUID.randomUUID().toString();
         }
 
-        Map<String, Object> updatePayload = Map.of(
-                "status", "COMPLETED",
-                "notes", "Maintenance finished successfully"
-        );
+        String updatePayload = """
+                {
+                  "status": "COMPLETED",
+                  "notes": "Maintenance finished successfully"
+                }
+                """;
 
         RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body(updatePayload)
-                .patch("/api/v1/executions/" + executionId + "/status");
+                .patch("/api/v1/executions/" + executionId);
     }
 
     @Entao("a Ordem de Serviço deve refletir o status final {string}")
@@ -136,11 +149,15 @@ public class E2ESagaSteps {
     @E("o gateway de pagamento recusa a transação de pagamento")
     public void paymentGatewayDeclines() {
         RestAssured.baseURI = EnvironmentConfig.getBillingBaseUrl();
-        Map<String, Object> webhookPayload = Map.of(
-                "action", "payment.updated",
-                "data", Map.of("id", "MP-DECLINED-" + UUID.randomUUID()),
-                "status", "rejected"
-        );
+        String webhookPayload = """
+                {
+                  "action": "payment.updated",
+                  "data": {
+                    "id": "MP-DECLINED-%s"
+                  },
+                  "status": "rejected"
+                }
+                """.formatted(UUID.randomUUID());
 
         RestAssured.given()
                 .contentType(ContentType.JSON)

@@ -49,26 +49,26 @@ export default function () {
 
     // 3. Diagnose
     const diagPayload = JSON.stringify({ status: 'DIAGNOSING', totalAmount: 0.0 });
-    http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, diagPayload, params);
+    http.patch(`${BASE_URL}/api/v1/work-orders/${id}`, diagPayload, params);
 
     // 4. Budget
     const budgetPayload = JSON.stringify({ status: 'WAITING_APPROVAL', totalAmount: 450.0 });
-    http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, budgetPayload, params);
+    http.patch(`${BASE_URL}/api/v1/work-orders/${id}`, budgetPayload, params);
 
     // 5. Approve
     const approvePayload = JSON.stringify({ status: 'APPROVED', totalAmount: 450.0 });
-    const approveRes = http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, approvePayload, params);
+    const approveRes = http.patch(`${BASE_URL}/api/v1/work-orders/${id}`, approvePayload, params);
     check(approveRes, {
       'approve work order status is 200': (r) => r.status === 200,
     });
 
     // 6. Finish & Release
-    http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, JSON.stringify({ status: 'COMPLETED' }), params);
-    http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, JSON.stringify({ status: 'DELIVERED' }), params);
+    http.patch(`${BASE_URL}/api/v1/work-orders/${id}`, JSON.stringify({ status: 'COMPLETED' }), params);
+    http.patch(`${BASE_URL}/api/v1/work-orders/${id}`, JSON.stringify({ status: 'DELIVERED' }), params);
   }
 
   // 7. Metrics Query
-  const metricRes = http.get(`${BASE_URL}/api/v1/work-orders/metrics/average-time`);
+  const metricRes = http.get(`${BASE_URL}/api/v1/work-orders/metrics`);
   check(metricRes, {
     'metrics query returns 200 or 204': (r) => r.status === 200 || r.status === 204,
   });

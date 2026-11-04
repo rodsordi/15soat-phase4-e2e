@@ -5,7 +5,13 @@
 Este diagrama documenta o recebimento e reconciliação dos webhooks do Mercado Pago, cobrindo o fluxo de aprovação e o fluxo de recusa com publicação de eventos transacionais no Apache Kafka.
 
 <div style="overflow-x: auto; width: 100%;">
-<div style="min-width: 950px;">
+<style>
+  .mermaid svg {
+    max-width: none !important;
+    min-width: 1100px !important;
+    width: 1100px !important;
+  }
+</style>
 
 ```mermaid
 sequenceDiagram
@@ -37,4 +43,4 @@ sequenceDiagram
 ```
 
 </div>
-</div>
+

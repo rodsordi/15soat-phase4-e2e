@@ -9,6 +9,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -39,11 +40,13 @@ public class BillingSteps {
     @Quando("uma fatura é criada para a Ordem de Serviço com o valor {double} e cliente {string}")
     public void anInvoiceIsCreated(double amount, String customerDocument) {
         workOrderId = UUID.randomUUID().toString();
-        Map<String, Object> payload = Map.of(
-                "workOrderId", workOrderId,
-                "customerDocument", customerDocument,
-                "amount", amount
-        );
+        String payload = String.format(Locale.US, """
+                {
+                  "workOrderId": "%s",
+                  "customerDocument": "%s",
+                  "amount": %.2f
+                }
+                """, workOrderId, customerDocument, amount);
 
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
@@ -80,11 +83,15 @@ public class BillingSteps {
 
     @Quando("o Mercado Pago envia uma notificação de webhook de pagamento com o status {string}")
     public void mercadoPagoPostsWebhook(String paymentStatus) {
-        Map<String, Object> payload = Map.of(
-                "action", "payment.updated",
-                "data", Map.of("id", "MP-TEST-9988"),
-                "status", paymentStatus
-        );
+        String payload = """
+                {
+                  "action": "payment.updated",
+                  "data": {
+                    "id": "MP-TEST-9988"
+                  },
+                  "status": "%s"
+                }
+                """.formatted(paymentStatus);
 
         response = RestAssured.given()
                 .contentType(ContentType.JSON)

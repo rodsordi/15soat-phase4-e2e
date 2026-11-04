@@ -44,7 +44,7 @@ export default function () {
       status: 'IN_REPAIR',
       notes: 'Repair started by technician',
     });
-    const repairRes = http.patch(`${BASE_URL}/api/v1/executions/${id}/status`, repairPayload, params);
+    const repairRes = http.patch(`${BASE_URL}/api/v1/executions/${id}`, repairPayload, params);
     check(repairRes, {
       'in_repair status is 200': (r) => r.status === 200,
     });
@@ -54,7 +54,7 @@ export default function () {
       status: 'COMPLETED',
       notes: 'Repair completed with all checks passed',
     });
-    const completeRes = http.patch(`${BASE_URL}/api/v1/executions/${id}/status`, completePayload, params);
+    const completeRes = http.patch(`${BASE_URL}/api/v1/executions/${id}`, completePayload, params);
     check(completeRes, {
       'complete status is 200': (r) => r.status === 200,
     });

@@ -1,7 +1,13 @@
 # Diagrama de Sequência: Gestão do Catálogo de Serviços
 
 <div style="overflow-x: auto; width: 100%;">
-<div style="min-width: 900px;">
+<style>
+  .mermaid svg {
+    max-width: none !important;
+    min-width: 1100px !important;
+    width: 1100px !important;
+  }
+</style>
 
 ```mermaid
 sequenceDiagram
@@ -33,4 +39,4 @@ sequenceDiagram
 ```
 
 </div>
-</div>
+

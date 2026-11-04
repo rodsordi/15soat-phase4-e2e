@@ -5,7 +5,13 @@
 Este diagrama documenta a entrada do veículo na fila de oficina, avanço de status durante os reparos e finalização técnica com persistência documental no MongoDB e emissão de eventos no Kafka.
 
 <div style="overflow-x: auto; width: 100%;">
-<div style="min-width: 950px;">
+<style>
+  .mermaid svg {
+    max-width: none !important;
+    min-width: 1300px !important;
+    width: 1300px !important;
+  }
+</style>
 
 ```mermaid
 sequenceDiagram
@@ -29,7 +35,7 @@ sequenceDiagram
 
     %% Início dos Reparos
     Note over Mecanico,Mongo: 2. Transição para Reparo em Andamento (Status: IN_REPAIR)
-    Mecanico->>+Kong: PATCH /api/v1/executions/{id}/status<br/>{ status: "IN_REPAIR" }
+    Mecanico->>+Kong: PATCH /api/v1/executions/{id}<br/>{ status: "IN_REPAIR" }
     Kong->>+Exec: Proxy HTTP Request
     Exec->>Mongo: Atualiza status para IN_REPAIR
     Exec-->>-Kong: Retorna 200 OK
@@ -37,7 +43,7 @@ sequenceDiagram
 
     %% Conclusão dos Reparos
     Note over Mecanico,Kafka: 3. Finalização Técnica e Notificação (Status: COMPLETED)
-    Mecanico->>+Kong: PATCH /api/v1/executions/{id}/status<br/>{ status: "COMPLETED" }
+    Mecanico->>+Kong: PATCH /api/v1/executions/{id}<br/>{ status: "COMPLETED" }
     Kong->>+Exec: Proxy HTTP Request
     Exec->>Mongo: Atualiza status para COMPLETED e completedAt
     Exec->>Kafka: Publica ExecutionCompletedEvent (Tópico: execution-events)
@@ -46,4 +52,4 @@ sequenceDiagram
 ```
 
 </div>
-</div>
+

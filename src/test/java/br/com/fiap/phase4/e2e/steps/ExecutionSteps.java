@@ -41,11 +41,13 @@ public class ExecutionSteps {
         if (executionId == null) {
             executionId = UUID.randomUUID().toString();
         }
-        Map<String, Object> payload = Map.of(
-                "materialCode", code,
-                "description", desc,
-                "quantity", qty
-        );
+        String payload = """
+                {
+                  "materialCode": "%s",
+                  "description": "%s",
+                  "quantity": %d
+                }
+                """.formatted(code, desc, qty);
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body(payload)
@@ -70,11 +72,13 @@ public class ExecutionSteps {
     @Quando("uma ordem de execução é enfileirada para a Ordem de Serviço com o técnico {string}")
     public void anExecutionOrderIsEnqueued(String technicianId) {
         workOrderId = UUID.randomUUID().toString();
-        Map<String, Object> payload = Map.of(
-                "workOrderId", workOrderId,
-                "technicianId", technicianId,
-                "notes", "Vehicle inspection entry"
-        );
+        String payload = """
+                {
+                  "workOrderId": "%s",
+                  "technicianId": "%s",
+                  "notes": "Vehicle inspection entry"
+                }
+                """.formatted(workOrderId, technicianId);
 
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
@@ -101,10 +105,12 @@ public class ExecutionSteps {
             executionId = UUID.randomUUID().toString();
         }
 
-        Map<String, Object> payload = Map.of(
-                "task", task,
-                "completed", true
-        );
+        String payload = """
+                {
+                  "task": "%s",
+                  "completed": true
+                }
+                """.formatted(task);
 
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
@@ -134,15 +140,17 @@ public class ExecutionSteps {
             executionId = UUID.randomUUID().toString();
         }
 
-        Map<String, Object> payload = Map.of(
-                "status", status,
-                "notes", "Status update: " + status
-        );
+        String payload = """
+                {
+                  "status": "%s",
+                  "notes": "Status update: %s"
+                }
+                """.formatted(status, status);
 
         response = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body(payload)
-                .patch("/api/v1/executions/" + executionId + "/status");
+                .patch("/api/v1/executions/" + executionId);
     }
 
     @Entao("o status da execução deve ser atualizado para {string}")
