@@ -14,6 +14,7 @@ export const options = {
 };
 
 const BASE_URL = __ENV.GATEWAY_URL || 'http://localhost:8080';
+const AUTH_TOKEN = __ENV.AUTH_TOKEN || 'Bearer mock_saga_jwt_token';
 
 export default function () {
   const uniqueId = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
@@ -21,6 +22,7 @@ export default function () {
   const params = {
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': AUTH_TOKEN,
     },
   };
 
@@ -38,8 +40,12 @@ export default function () {
   if (openRes.status === 201) {
     const workOrderId = JSON.parse(openRes.body).id;
 
-    // 2. Approve Work Order
-    const approvePayload = JSON.stringify({ status: 'APPROVED', totalAmount: 500.0 });
+    // 2. Diagnose & Budget Waiting Approval
+    http.patch(`${BASE_URL}/api/v1/work-orders/${workOrderId}`, JSON.stringify({ status: 'DIAGNOSING' }), params);
+    http.patch(`${BASE_URL}/api/v1/work-orders/${workOrderId}`, JSON.stringify({ status: 'WAITING_APPROVAL' }), params);
+
+    // 3. Customer Approves Work Order
+    const approvePayload = JSON.stringify({ status: 'APPROVED' });
     http.patch(`${BASE_URL}/api/v1/work-orders/${workOrderId}`, approvePayload, params);
 
     // 3. Billing creates Invoice
@@ -56,13 +62,15 @@ export default function () {
       data: { id: `MP-DECLINED-${uniqueId}` },
       status: 'rejected',
     });
-    const webRes = http.post(`${BASE_URL}/api/v1/payments/webhook`, webhookPayload, params);
+    const webRes = http.post(`${BASE_URL}/api/v1/payments/webhook`, webhookPayload, {
+      headers: { 'Content-Type': 'application/json' },
+    });
     check(webRes, {
       'rollback 4. webhook reject status is 200': (r) => r.status === 200,
     });
 
     // 5. Verify Rollback Execution
-    const finalRes = http.get(`${BASE_URL}/api/v1/work-orders/${workOrderId}`);
+    const finalRes = http.get(`${BASE_URL}/api/v1/work-orders/${workOrderId}`, params);
     check(finalRes, {
       'rollback 5. verify work order status is 200': (r) => r.status === 200,
     });

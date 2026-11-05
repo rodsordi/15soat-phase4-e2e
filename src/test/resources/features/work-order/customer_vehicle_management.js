@@ -14,6 +14,7 @@ export const options = {
 };
 
 const BASE_URL = __ENV.GATEWAY_URL || 'http://localhost:8080';
+const AUTH_TOKEN = __ENV.AUTH_TOKEN || 'Bearer mock_employee_jwt_token';
 
 export default function () {
   const uniqueId = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
@@ -23,6 +24,7 @@ export default function () {
   const params = {
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': AUTH_TOKEN,
     },
   };
 
@@ -39,7 +41,7 @@ export default function () {
   });
 
   // 2. Query Customer
-  const getCustRes = http.get(`${BASE_URL}/api/v1/customers/${doc}`);
+  const getCustRes = http.get(`${BASE_URL}/api/v1/customers/${doc}`, params);
   check(getCustRes, {
     'get customer status is 200': (r) => r.status === 200,
   });
@@ -59,7 +61,7 @@ export default function () {
   });
 
   // 4. Query Vehicle
-  const getVehRes = http.get(`${BASE_URL}/api/v1/vehicles/${plate}`);
+  const getVehRes = http.get(`${BASE_URL}/api/v1/vehicles/${plate}`, params);
   check(getVehRes, {
     'get vehicle status is 200': (r) => r.status === 200,
   });

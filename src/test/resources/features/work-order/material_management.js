@@ -13,10 +13,14 @@ export const options = {
   },
 };
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+const BASE_URL = __ENV.GATEWAY_URL || __ENV.BASE_URL || 'http://localhost:8080';
+const AUTH_TOKEN = __ENV.AUTH_TOKEN || 'Bearer mock_employee_jwt_token';
 
 export default function () {
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': AUTH_TOKEN,
+  };
 
   // 1. List materials catalog
   const listRes = http.get(`${BASE_URL}/api/v1/materials`, { headers });

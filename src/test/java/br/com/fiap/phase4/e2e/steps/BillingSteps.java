@@ -1,6 +1,7 @@
 package br.com.fiap.phase4.e2e.steps;
 
 import br.com.fiap.phase4.e2e.config.EnvironmentConfig;
+import br.com.fiap.phase4.e2e.context.ScenarioContext;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.E;
 import io.cucumber.java.pt.Entao;
@@ -8,6 +9,7 @@ import io.cucumber.java.pt.Quando;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Locale;
 import java.util.Map;
@@ -15,31 +17,34 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@RequiredArgsConstructor
 public class BillingSteps {
 
-    private Response response;
-    private String invoiceId;
-    private String workOrderId;
+    private final ScenarioContext context;
 
     @Dado("que o serviço de Faturamento está em execução e operacional")
     public void theBillingServiceIsAvailable() {
-        RestAssured.baseURI = EnvironmentConfig.getBillingBaseUrl();
+        // Operational check verified via baseUri per request
     }
 
     @Dado("que o analista de faturamento está devidamente autenticado com perfil {string}")
     public void billingAnalystIsAuthenticated(String role) {
-        theBillingServiceIsAvailable();
+        context.setCurrentAuthToken("Bearer valid_" + role.toLowerCase() + "_token");
     }
 
     @Dado("uma fatura gerada com status {string}")
     public void invoiceGeneratedWithStatus(String status) {
-        theBillingServiceIsAvailable();
         anInvoiceIsCreated(350.00, "52998224725");
     }
 
     @Quando("uma fatura é criada para a Ordem de Serviço com o valor {double} e cliente {string}")
     public void anInvoiceIsCreated(double amount, String customerDocument) {
-        workOrderId = UUID.randomUUID().toString();
+        String workOrderId = context.getWorkOrderId();
+        if (workOrderId == null) {
+            workOrderId = UUID.randomUUID().toString();
+            context.setWorkOrderId(workOrderId);
+        }
+
         String payload = String.format(Locale.US, """
                 {
                   "workOrderId": "%s",
@@ -48,15 +53,16 @@ public class BillingSteps {
                 }
                 """, workOrderId, customerDocument, amount);
 
-        response = RestAssured.given()
-                .contentType(ContentType.JSON)
+        Response response = context.givenBillingAuth()
                 .body(payload)
                 .post("/api/v1/invoices");
 
-        if (response.getStatusCode() == 201) {
-            invoiceId = response.jsonPath().getString("id");
+        context.setResponse(response);
+
+        if (response != null && response.getStatusCode() == 201) {
+            context.setInvoiceId(response.jsonPath().getString("id"));
         } else {
-            invoiceId = UUID.randomUUID().toString();
+            context.setInvoiceId(UUID.randomUUID().toString());
         }
     }
 
@@ -69,16 +75,18 @@ public class BillingSteps {
 
     @Entao("a fatura deve ser criada com o status {string}")
     public void theInvoiceShouldBeCreatedWithStatus(String expectedStatus) {
-        if (response != null && (response.getStatusCode() == 200 || response.getStatusCode() == 201)) {
-            assertThat(response.jsonPath().getString("status")).isEqualTo(expectedStatus);
-        }
+        Response response = context.getResponse();
+        assertThat(response).as("Billing response must not be null").isNotNull();
+        assertThat(response.getStatusCode()).isIn(200, 201);
+        assertThat(response.jsonPath().getString("status")).isEqualTo(expectedStatus);
     }
 
     @E("a preferência de pagamento deve conter um link de checkout válido")
     public void checkoutUrlIsValid() {
-        if (response != null && response.getStatusCode() == 201) {
-            assertThat(response.jsonPath().getString("checkoutUrl")).isNotEmpty();
-        }
+        Response response = context.getResponse();
+        assertThat(response).as("Billing response must not be null").isNotNull();
+        assertThat(response.getStatusCode()).isIn(200, 201);
+        assertThat(response.jsonPath().getString("checkoutUrl")).isNotEmpty();
     }
 
     @Quando("o Mercado Pago envia uma notificação de webhook de pagamento com o status {string}")
@@ -93,20 +101,30 @@ public class BillingSteps {
                 }
                 """.formatted(paymentStatus);
 
-        response = RestAssured.given()
+        Response response = RestAssured.given()
+                .baseUri(EnvironmentConfig.getBillingBaseUrl())
                 .contentType(ContentType.JSON)
                 .body(payload)
                 .post("/api/v1/payments/webhook");
+
+        context.setResponse(response);
     }
 
     @Entao("o status da fatura deve ser alterado para {string}")
     public void theInvoiceStatusShouldBeTransitionedTo(String expectedStatus) {
-        if (invoiceId != null) {
-            Response getResponse = RestAssured.given()
-                    .get("/api/v1/invoices/" + invoiceId);
-            if (getResponse.getStatusCode() == 200) {
-                assertThat(getResponse.jsonPath().getString("status")).isEqualTo(expectedStatus);
-            }
+        String invoiceId = context.getInvoiceId();
+        if (invoiceId == null) {
+            invoiceId = UUID.randomUUID().toString();
+            context.setInvoiceId(invoiceId);
+            return;
+        }
+
+        Response getResponse = context.givenBillingAuth()
+                .get("/api/v1/invoices/" + invoiceId);
+
+        assertThat(getResponse).as("Get invoice response must not be null").isNotNull();
+        if (getResponse.getStatusCode() == 200) {
+            assertThat(getResponse.jsonPath().getString("status")).isEqualTo(expectedStatus);
         }
     }
 }

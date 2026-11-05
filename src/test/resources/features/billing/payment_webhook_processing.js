@@ -14,6 +14,7 @@ export const options = {
 };
 
 const BASE_URL = __ENV.GATEWAY_URL || 'http://localhost:8080';
+const WEBHOOK_SECRET = __ENV.WEBHOOK_SECRET || 'test_mercadopago_secret';
 
 export default function () {
   const uniqueId = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
@@ -30,6 +31,7 @@ export default function () {
   const params = {
     headers: {
       'Content-Type': 'application/json',
+      'x-signature': WEBHOOK_SECRET,
     },
   };
 

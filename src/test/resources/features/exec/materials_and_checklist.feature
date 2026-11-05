@@ -11,7 +11,7 @@ Funcionalidade: Gestão de Materiais de Estoque e Checklists Técnicos
   Contexto:
     Dado que o serviço de Execução da Oficina está em execução e operacional
     E que o mecânico responsável está devidamente autenticado com perfil "EMPLOYEE"
-    E uma ordem de execução criada com identificador válido
+    E uma ordem de execução é enfileirada para a Ordem de Serviço com o técnico "TECH-101"
 
   # ============================================================================
   # Cenário 1: Cadastro e Vínculo de Material / Peça de Estoque

@@ -18,13 +18,20 @@ Funcionalidade: Transação Compensatória e Rollback da Saga Distribuída
   @saga-compensacao
   Cenário: Rollback Compensatório - Recusa de pagamento cancela a Ordem de Serviço
     # --- 1. Abertura da Ordem de Serviço na Recepção ---
-    Quando o atendente abre uma nova Ordem de Serviço para o veículo "ABC1D23"
+    Quando o atendente abre uma nova Ordem de Serviço com os seguintes dados:
+      | customerDocument | 52998224725                        |
+      | licensePlate     | ABC1D23                            |
+      | description      | Revisão com falha de processamento |
 
-    # --- 2. Aprovação do Orçamento ---
+    # --- 2. Diagnóstico e Orçamento Técnico ---
+    E o mecânico inicia o diagnóstico da Ordem de Serviço
+    E o mecânico conclui o diagnóstico e o faturamento gera o orçamento
+
+    # --- 3. Aprovação do Orçamento ---
     E o gestor da oficina aprova o orçamento da Ordem de Serviço
 
-    # --- 3. Gateway de Pagamento Recusa a Transação ---
+    # --- 4. Gateway de Pagamento Recusa a Transação ---
     E o gateway de pagamento recusa a transação de pagamento
 
-    # --- 4. Ação Compensatória Distribuída (Saga Rollback) ---
+    # --- 5. Ação Compensatória Distribuída (Saga Rollback) ---
     Então a Saga distribuída deve executar a compensação e marcar a Ordem de Serviço como "CANCELED"

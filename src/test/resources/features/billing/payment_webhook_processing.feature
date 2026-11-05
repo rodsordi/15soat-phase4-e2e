@@ -10,7 +10,8 @@ Funcionalidade: Processamento de Webhooks de Pagamento e Liquidação
   # ============================================================================
   Contexto:
     Dado que o serviço de Faturamento está em execução e operacional
-    E uma fatura gerada com status "PENDING"
+    E que o analista de faturamento está devidamente autenticado com perfil "EMPLOYEE"
+    E uma fatura é criada para a Ordem de Serviço com o valor 350.00 e cliente "52998224725"
 
   # ============================================================================
   # Cenário 1: Confirmação de Pagamento Aprovado
