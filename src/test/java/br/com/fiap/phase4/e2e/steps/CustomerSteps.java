@@ -8,6 +8,7 @@ import io.cucumber.java.pt.Quando;
 import io.restassured.response.Response;
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,6 +17,47 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CustomerSteps {
 
     private final ScenarioContext context;
+
+    private String resolveCustomerId(String doc) {
+        Response resp = context.givenAuth().get("/api/v1/customers?document=" + doc);
+        if (resp != null && resp.getStatusCode() == 200) {
+            String id = resp.jsonPath().getString("id");
+            if (id == null) {
+                id = resp.jsonPath().getString("content[0].id");
+            }
+            if (id != null && !id.isBlank()) {
+                return id;
+            }
+        }
+        return doc;
+    }
+
+    private void cleanUpExistingCustomerIfExists(String doc) {
+        try {
+            Response resp = context.givenAuth().get("/api/v1/customers?document=" + doc);
+            if (resp != null && resp.getStatusCode() == 200) {
+                String id = resp.jsonPath().getString("id");
+                if (id == null) {
+                    id = resp.jsonPath().getString("content[0].id");
+                }
+                if (id != null && !id.isBlank()) {
+                    Response vehResp = context.givenAuth().get("/api/v1/vehicles");
+                    if (vehResp != null && vehResp.getStatusCode() == 200) {
+                        List<Map<String, Object>> vehicles = vehResp.jsonPath().getList("content");
+                        if (vehicles != null) {
+                            for (Map<String, Object> v : vehicles) {
+                                if (doc.equals(v.get("customerDocument"))) {
+                                    context.givenAuth().delete("/api/v1/vehicles/" + v.get("id"));
+                                }
+                            }
+                        }
+                    }
+                    context.givenAuth().delete("/api/v1/customers/" + id);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
 
     @Quando("o cliente com documento {string}, nome {string} e email {string} tenta ser cadastrado")
     public void tryRegisterCustomerWithoutAuth(String document, String name, String email) {
@@ -31,11 +73,17 @@ public class CustomerSteps {
                 .post("/api/v1/customers"));
     }
 
-    @Dado("que o cliente com documento {string} já está previamente cadastrado no sistema")
     @Dado("o cliente com documento {string} cadastrado")
     public void customerAlreadyRegistered(String doc) {
         context.setCustomerDoc(doc);
-        registerCustomer(doc, "Rodrigo Sordi", "rodrigo@fiap.com.br");
+        context.setPreserveCustomer(true);
+        Response checkResp = context.givenAuth().get("/api/v1/customers?document=" + doc);
+        boolean exists = checkResp != null && checkResp.getStatusCode() == 200 &&
+                (checkResp.jsonPath().getList("content") != null && !checkResp.jsonPath().getList("content").isEmpty()
+                 || checkResp.jsonPath().getString("id") != null);
+        if (!exists) {
+            registerCustomer(doc, "Rodrigo Sordi", "rodrigo@fiap.com.br");
+        }
     }
 
     @Dado("o cliente com documento {string}, nome {string} e email {string}")
@@ -47,9 +95,15 @@ public class CustomerSteps {
 
     @Dado("o cliente com os seguintes dados cadastrais:")
     public void prepareCustomerDataFromTable(Map<String, String> data) {
-        context.setCustomerDoc(data.get("document"));
+        String doc = data.get("document");
+        context.setCustomerDoc(doc);
         context.setPendingCustomerName(data.get("name"));
         context.setPendingCustomerEmail(data.get("email"));
+        if (context.isPreserveCustomer()) {
+            context.setPreserveCustomer(false);
+        } else {
+            cleanUpExistingCustomerIfExists(doc);
+        }
     }
 
     @Quando("o cadastro do cliente é submetido")
@@ -92,7 +146,12 @@ public class CustomerSteps {
     @Quando("a consulta de cliente por documento {string} é realizada")
     @Quando("o cliente com documento {string} é consultado")
     public void executeCustomerQuery(String doc) {
-        context.setResponse(context.givenAuth().get("/api/v1/customers?document=" + doc));
+        String customerId = resolveCustomerId(doc);
+        if (customerId != null && !customerId.equals(doc)) {
+            context.setResponse(context.givenAuth().get("/api/v1/customers/" + customerId));
+        } else {
+            context.setResponse(context.givenAuth().get("/api/v1/customers?document=" + doc));
+        }
     }
 
     @Entao("a consulta deve retornar o nome {string}")
@@ -100,7 +159,11 @@ public class CustomerSteps {
         Response response = context.getResponse();
         assertThat(response).as("HTTP response must not be null").isNotNull();
         assertThat(response.getStatusCode()).isEqualTo(200);
-        assertThat(response.jsonPath().getString("name")).isEqualTo(expectedName);
+        String name = response.jsonPath().getString("name");
+        if (name == null) {
+            name = response.jsonPath().getString("content[0].name");
+        }
+        assertThat(name).isEqualTo(expectedName);
     }
 
     @Entao("a consulta deve retornar o nome {string} e o email {string}")
@@ -108,8 +171,16 @@ public class CustomerSteps {
         Response response = context.getResponse();
         assertThat(response).as("HTTP response must not be null").isNotNull();
         assertThat(response.getStatusCode()).isEqualTo(200);
-        assertThat(response.jsonPath().getString("name")).isEqualTo(expectedName);
-        assertThat(response.jsonPath().getString("email")).isEqualTo(expectedEmail);
+        String name = response.jsonPath().getString("name");
+        if (name == null) {
+            name = response.jsonPath().getString("content[0].name");
+        }
+        String email = response.jsonPath().getString("email");
+        if (email == null) {
+            email = response.jsonPath().getString("content[0].email");
+        }
+        assertThat(name).isEqualTo(expectedName);
+        assertThat(email).isEqualTo(expectedEmail);
     }
 
     @Entao("a consulta deve retornar os seguintes dados do cliente:")
@@ -119,6 +190,9 @@ public class CustomerSteps {
         assertThat(response.getStatusCode()).isEqualTo(200);
         expectedFields.forEach((key, expectedValue) -> {
             String actualValue = response.jsonPath().getString(key);
+            if (actualValue == null) {
+                actualValue = response.jsonPath().getString("content[0]." + key);
+            }
             assertThat(actualValue).isEqualTo(expectedValue);
         });
     }
@@ -128,12 +202,17 @@ public class CustomerSteps {
         Response getResp = context.givenAuth().get("/api/v1/customers?document=" + doc);
         assertThat(getResp).as("Customer query response must not be null").isNotNull();
         if (getResp.getStatusCode() == 200) {
-            assertThat(getResp.jsonPath().getString("name")).isEqualTo(expectedName);
+            String name = getResp.jsonPath().getString("name");
+            if (name == null) {
+                name = getResp.jsonPath().getString("content[0].name");
+            }
+            assertThat(name).isEqualTo(expectedName);
         }
     }
 
     @Quando("o cliente com documento {string} tem seu nome atualizado para {string}")
     public void updateCustomerName(String doc, String newName) {
+        String targetId = resolveCustomerId(doc);
         String payload = """
                 {
                   "name": "%s"
@@ -141,20 +220,22 @@ public class CustomerSteps {
                 """.formatted(newName);
         context.setResponse(context.givenAuth()
                 .body(payload)
-                .patch("/api/v1/customers/" + doc));
+                .patch("/api/v1/customers/" + targetId));
     }
 
     @Dado("o cliente com documento {string} cadastrado sem veículos")
     public void customerRegisteredWithoutVehicles(String doc) {
         context.setCustomerDoc(doc);
+        cleanUpExistingCustomerIfExists(doc);
         registerCustomer(doc, "Cliente Sem Veiculo", "semveiculo@fiap.com.br");
     }
 
     @Quando("o cliente com documento {string} é excluído por seu identificador único")
     @Quando("o cliente com documento {string} tenta ser excluído por seu identificador único")
     public void deleteCustomerByDocument(String doc) {
+        String targetId = resolveCustomerId(doc);
         context.setResponse(context.givenAuth()
-                .delete("/api/v1/customers/" + doc));
+                .delete("/api/v1/customers/" + targetId));
     }
 
     @Entao("a resposta de exclusão deve retornar o código HTTP {int}")

@@ -24,6 +24,7 @@ public class ScenarioContext {
     private String technicianId = "TECH-101";
     private String currentAuthToken = "Bearer mock_employee_jwt_token";
     private String adminToken = "Bearer admin_master_token";
+    private boolean preserveCustomer;
 
     public RequestSpecification givenAuth() {
         return givenAuth(EnvironmentConfig.getWorkOrderBaseUrl());
@@ -47,6 +48,10 @@ public class ScenarioContext {
                 .contentType(ContentType.JSON);
         if (currentAuthToken != null) {
             spec.header("Authorization", currentAuthToken);
+        }
+        String host = EnvironmentConfig.getGatewayHost();
+        if (host != null && !host.isBlank()) {
+            spec.header("Host", host);
         }
         return spec;
     }

@@ -24,7 +24,12 @@ public class WorkOrderSteps {
     public void theWorkOrderServiceIsAvailable() {
         String healthEndpoint = EnvironmentConfig.getWorkOrderBaseUrl() + "/actuator/health";
         try {
-            Response healthResp = RestAssured.get(healthEndpoint);
+            io.restassured.specification.RequestSpecification spec = RestAssured.given();
+            String host = EnvironmentConfig.getGatewayHost();
+            if (host != null && !host.isBlank()) {
+                spec.header("Host", host);
+            }
+            Response healthResp = spec.get(healthEndpoint);
             if (healthResp != null && healthResp.getStatusCode() == 200) {
                 assertThat(healthResp.jsonPath().getString("status")).isIn("UP", "UNKNOWN");
             }
