@@ -37,11 +37,13 @@ sequenceDiagram
     Billing-->>-Kafka: Fatura registrada
 
     Note over MP,Kafka: 2. Pagamento Recusado / Cancelado pelo Gateway
-    MP->>+Kong: POST /api/v1/payments/webhook<br/>{ action: "payment.updated", status: "rejected" }
+    MP->>+Kong: POST /api/v1/payments/mercadopago/webhook<br/>{ action: "payment.updated", data: { id: "ORD-9988" } }
     Kong->>+Billing: Proxy Request
+    Billing->>+MP: GET /v1/orders/{order_id} (Reconciliação e Verificação Ativa)
+    MP-->>-Billing: Retorna status: "rejected"
     Billing->>Billing: Atualiza Fatura (Status: FAILED)
     Billing->>Kafka: Publica PaymentFailedEvent (Tópico: payment-events)
-    Billing-->>-Kong: 200 OK
+    Billing-->>-Kong: 200 OK { status: "PROCESSED" }
     Kong-->>-MP: 200 OK
 
     Note over Kafka,OS: 3. Transação Compensatória (Saga Rollback)

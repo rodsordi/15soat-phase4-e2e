@@ -15,6 +15,7 @@ public class ScenarioContext {
     private Response response;
     private String workOrderId;
     private String invoiceId;
+    private String externalPaymentId;
     private String executionId;
     private String customerDoc;
     private String vehiclePlate;

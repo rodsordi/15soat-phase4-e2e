@@ -46,15 +46,15 @@ sequenceDiagram
     %% Faturamento e Pagamento
     Note over Kafka,MP: 3. Geração de Fatura e Liquidação Mercado Pago
     Kafka->>+Billing: Consome WorkOrderApprovedEvent
-    Billing->>+MP: Gera checkout / QR Code Pix
-    MP-->>-Billing: Retorna checkout URL
     Billing->>Billing: Salva Fatura no PG (Status: PENDING)
     Billing-->>-Kafka: Fatura registrada
-    MP->>+Kong: POST /api/v1/payments/webhook<br/>{ action: "payment.updated", status: "approved" }
+    MP->>+Kong: POST /api/v1/payments/mercadopago/webhook<br/>{ action: "payment.updated", data: { id: "ORD-9988" } }
     Kong->>+Billing: Proxy Request
+    Billing->>+MP: GET /v1/orders/{order_id} (Reconciliação e Verificação Ativa)
+    MP-->>-Billing: Retorna status: "approved"
     Billing->>Billing: Atualiza Fatura (Status: PAID)
     Billing->>Kafka: Publica PaymentConfirmedEvent (Tópico: payment-events)
-    Billing-->>-Kong: 200 OK
+    Billing-->>-Kong: 200 OK { status: "PROCESSED" }
     Kong-->>-MP: 200 OK
 
     %% Execução na Oficina
