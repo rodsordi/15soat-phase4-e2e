@@ -40,6 +40,15 @@ sequenceDiagram
     Mongo-->>Exec: Confirma atualização
     Exec-->>-Kong: Retorna 200 OK
     Kong-->>-Mecanico: Retorna 200 OK
+
+    %% Consulta Consolidada
+    Note over Mecanico,Mongo: 3. Consulta Detalhada Consolidada do Histórico
+    Mecanico->>+Kong: GET /api/v1/executions/{id}
+    Kong->>+Exec: Proxy HTTP Request
+    Exec->>Mongo: Recupera documento completo agregado por ID
+    Mongo-->>Exec: Retorna documento com materials e checklist
+    Exec-->>-Kong: Retorna 200 OK (ExecutionDetailedResponse)
+    Kong-->>-Mecanico: Retorna 200 OK
 ```
 
 </div>

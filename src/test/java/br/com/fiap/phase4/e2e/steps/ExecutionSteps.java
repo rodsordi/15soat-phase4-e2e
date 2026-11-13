@@ -185,4 +185,67 @@ public class ExecutionSteps {
         assertThat(response.jsonPath().getString("status")).isEqualTo(expectedStatus);
         assertThat(response.jsonPath().getString("completedAt")).isNotNull();
     }
+
+    @Quando("o supervisor consulta a fila de execução da oficina")
+    public void supervisorQueriesExecutionQueue() {
+        Response response = context.givenExecAuth()
+                .get("/api/v1/executions/queue");
+        context.setResponse(response);
+    }
+
+    @Entao("a fila deve listar a ordem de execução com paginação e status ativo")
+    public void queueShouldListExecutionOrder() {
+        Response response = context.getResponse();
+        assertThat(response).as("Execution queue response must not be null").isNotNull();
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(response.jsonPath().getList("content")).isNotEmpty();
+        assertThat(response.jsonPath().getInt("totalElements")).isGreaterThanOrEqualTo(1);
+    }
+
+    @Quando("o mecânico registra uma interrupção técnica com status {string} e justificativa {string}")
+    public void mechanicRecordsTechnicalFailure(String status, String notes) {
+        String executionId = context.getExecutionId();
+        assertThat(executionId).as("Execution ID must not be null").isNotNull();
+        String payload = """
+                {
+                  "status": "%s",
+                  "notes": "%s"
+                }
+                """.formatted(status, notes);
+
+        Response response = context.givenExecAuth()
+                .body(payload)
+                .patch("/api/v1/executions/" + executionId);
+        context.setResponse(response);
+    }
+
+    @Quando("o mecânico tenta atualizar o status da execução para {string}")
+    public void mechanicAttemptsToUpdateStatus(String status) {
+        updatesExecutionStatus(status);
+    }
+
+    @Entao("o sistema deve rejeitar a operação informando violação de regra de negócio com código {int}")
+    public void systemRejectsWithBusinessRuleViolation(int expectedStatusCode) {
+        Response response = context.getResponse();
+        assertThat(response).as("Response must not be null").isNotNull();
+        assertThat(response.getStatusCode()).isEqualTo(expectedStatusCode);
+    }
+
+    @Quando("o mecânico consulta os detalhes consolidados da execução por ID")
+    public void mechanicQueriesConsolidatedExecutionDetails() {
+        String executionId = context.getExecutionId();
+        assertThat(executionId).as("Execution ID must not be null").isNotNull();
+        Response response = context.givenExecAuth()
+                .get("/api/v1/executions/" + executionId);
+        context.setResponse(response);
+    }
+
+    @Entao("os dados consolidados devem conter os materiais e itens de checklist registrados")
+    public void consolidatedDataShouldContainMaterialsAndChecklist() {
+        Response response = context.getResponse();
+        assertThat(response).as("Consolidated execution details response must not be null").isNotNull();
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(response.jsonPath().getList("materials")).isNotEmpty();
+        assertThat(response.jsonPath().getList("checklist")).isNotEmpty();
+    }
 }

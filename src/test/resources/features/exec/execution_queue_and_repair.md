@@ -33,22 +33,49 @@ sequenceDiagram
     Exec-->>-Kong: Retorna 201 Created (ExecutionResponse)
     Kong-->>-Mecanico: Retorna 201 Created
 
+    %% Consulta da Fila Operacional
+    Note over Mecanico,Mongo: 2. Consulta da Fila Ativa da Oficina (Status: QUEUED / IN_REPAIR)
+    Mecanico->>+Kong: GET /api/v1/executions/queue
+    Kong->>+Exec: Proxy HTTP Request
+    Exec->>Mongo: Busca ordens de execução ativas (QUEUED, IN_REPAIR)
+    Mongo-->>Exec: Retorna lista de ordens
+    Exec-->>-Kong: Retorna 200 OK (PagedExecutionResponse)
+    Kong-->>-Mecanico: Retorna 200 OK
+
     %% Início dos Reparos
-    Note over Mecanico,Mongo: 2. Transição para Reparo em Andamento (Status: IN_REPAIR)
+    Note over Mecanico,Mongo: 3. Transição para Reparo em Andamento (Status: IN_REPAIR)
     Mecanico->>+Kong: PATCH /api/v1/executions/{id}<br/>{ status: "IN_REPAIR" }
     Kong->>+Exec: Proxy HTTP Request
     Exec->>Mongo: Atualiza status para IN_REPAIR
     Exec-->>-Kong: Retorna 200 OK
     Kong-->>-Mecanico: Retorna 200 OK
 
-    %% Conclusão dos Reparos
-    Note over Mecanico,Kafka: 3. Finalização Técnica e Notificação (Status: COMPLETED)
-    Mecanico->>+Kong: PATCH /api/v1/executions/{id}<br/>{ status: "COMPLETED" }
+    %% Conclusão ou Falha dos Reparos
+    alt Conclusão Técnica do Reparo (Happy Path)
+        Note over Mecanico,Kafka: 4a. Finalização Técnica e Notificação (Status: COMPLETED)
+        Mecanico->>+Kong: PATCH /api/v1/executions/{id}<br/>{ status: "COMPLETED" }
+        Kong->>+Exec: Proxy HTTP Request
+        Exec->>Mongo: Atualiza status para COMPLETED e completedAt
+        Exec->>Kafka: Publica ExecutionCompletedEvent (Tópico: execution-events)
+        Exec-->>-Kong: Retorna 200 OK
+        Kong-->>-Mecanico: Retorna 200 OK
+    else Interrupção por Impedimento Técnico (Falha)
+        Note over Mecanico,Kafka: 4b. Registro de Falha e Justificativa (Status: FAILED)
+        Mecanico->>+Kong: PATCH /api/v1/executions/{id}<br/>{ status: "FAILED", notes: "Bloco trincado" }
+        Kong->>+Exec: Proxy HTTP Request
+        Exec->>Mongo: Atualiza status para FAILED e completedAt
+        Exec->>Kafka: Publica ExecutionFailedEvent (Tópico: execution-events)
+        Exec-->>-Kong: Retorna 200 OK
+        Kong-->>-Mecanico: Retorna 200 OK
+    end
+
+    %% Regra de Negócio: Bloqueio Pós-Finalização
+    Note over Mecanico,Exec: 5. Bloqueio de Alteração em Ordem Finalizada (Regra Defensiva)
+    Mecanico->>+Kong: PATCH /api/v1/executions/{id}<br/>{ status: "IN_REPAIR" }
     Kong->>+Exec: Proxy HTTP Request
-    Exec->>Mongo: Atualiza status para COMPLETED e completedAt
-    Exec->>Kafka: Publica ExecutionCompletedEvent (Tópico: execution-events)
-    Exec-->>-Kong: Retorna 200 OK
-    Kong-->>-Mecanico: Retorna 200 OK
+    Exec->>Exec: Valida status atual (COMPLETED/FAILED) -> Dispara DomainException
+    Exec-->>-Kong: Retorna 400 Bad Request (RFC 7807 ProblemDetail: EXECUTION_ALREADY_FINALIZED)
+    Kong-->>-Mecanico: Retorna 400 Bad Request
 ```
 
 </div>

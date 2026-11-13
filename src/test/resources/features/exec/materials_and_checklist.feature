@@ -34,3 +34,16 @@ Funcionalidade: Gestão de Materiais de Estoque e Checklists Técnicos
       | Verificar fluido de freio           | true      |
       | Inspecionar suspensão e amortecedor | true      |
     Então os itens de checklist devem ser persistidos com sucesso no MongoDB
+
+  # ============================================================================
+  # Cenário 3: Consulta Consolidada do Histórico Documental da Manutenção
+  # ============================================================================
+  @consulta-consolidada
+  Cenário: Consulta dos detalhes consolidados da manutenção veicular com materiais e checklist
+    Quando o material com os seguintes dados é registrado na manutenção:
+      | materialCode | PART-FLT-02          |
+      | description  | Filtro de Óleo Motor |
+      | quantity     | 1                    |
+    E o mecânico registra o item de checklist "Substituição do filtro de óleo" como concluído
+    E o mecânico consulta os detalhes consolidados da execução por ID
+    Então os dados consolidados devem conter os materiais e itens de checklist registrados
