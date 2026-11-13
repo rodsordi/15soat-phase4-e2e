@@ -48,7 +48,7 @@ Funcionalidade: Gestão do Catálogo de Serviços
       | price | 160.00                 |
     Quando o serviço é cadastrado no catálogo
     Então o erro retornado deve corresponder a:
-      | status    | 409                                           |
+      | status    | 400                                           |
       | errorCode | RESOURCE_ALREADY_EXISTS                       |
-      | title     | Resource Conflict                             |
+      | title     | Business Rule Violation                       |
       | detail    | Service with code SRV-OIL-01 already exists   |

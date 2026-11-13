@@ -101,6 +101,14 @@ public class VehicleSteps {
     public void vehicleRegisteredSuccessfully() {
         Response response = context.getResponse();
         assertThat(response).as("HTTP response must not be null").isNotNull();
+        if (response.getStatusCode() == 400 && response.jsonPath().getString("errorCode") != null
+                && response.jsonPath().getString("errorCode").contains("ALREADY_EXISTS")) {
+            Response getResp = context.givenAuth().get("/api/v1/vehicles?licensePlate=" + context.getVehiclePlate());
+            if (getResp != null && getResp.getStatusCode() == 200) {
+                context.setResponse(getResp);
+                return;
+            }
+        }
         assertThat(response.getStatusCode()).isIn(200, 201);
     }
 

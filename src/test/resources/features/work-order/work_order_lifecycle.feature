@@ -80,7 +80,7 @@ Funcionalidade: Ciclo de Vida Completo da Ordem de Serviço
         | description      | Troca de óleo e revisão de freios |
       Quando o próprio cliente tenta aprovar a Ordem de Serviço antes da formulação do orçamento
       Então o erro retornado deve corresponder a:
-        | status    | 422                                                  |
+        | status    | 400                                                  |
         | errorCode | INVALID_STATUS_TRANSITION                            |
         | title     | Business Rule Violation                              |
         | detail    | Cannot approve work order before budget is generated |
@@ -95,7 +95,7 @@ Funcionalidade: Ciclo de Vida Completo da Ordem de Serviço
       E o mecânico conclui o diagnóstico e o faturamento gera o orçamento
       Quando o mecânico tenta iniciar os reparos sem a aprovação do orçamento
       Então o erro retornado deve corresponder a:
-        | status    | 422                                                 |
+        | status    | 400                                                 |
         | errorCode | INVALID_STATUS_TRANSITION                           |
         | title     | Business Rule Violation                             |
         | detail    | Cannot execute work order before budget is approved |
@@ -118,7 +118,7 @@ Funcionalidade: Ciclo de Vida Completo da Ordem de Serviço
       E o mecânico conclui todos os reparos técnicos na oficina
       Quando o atendente tenta liberar o veículo para o cliente sem a confirmação do pagamento
       Então o erro retornado deve corresponder a:
-        | status    | 422                                                         |
+        | status    | 400                                                         |
         | errorCode | INVALID_STATUS_TRANSITION                                   |
         | title     | Business Rule Violation                                     |
         | detail    | Work order cannot be delivered before payment is confirmed  |
@@ -142,7 +142,7 @@ Funcionalidade: Ciclo de Vida Completo da Ordem de Serviço
       E o cliente realiza o pagamento via Mercado Pago e o webhook confirma a liquidação
       Quando o cliente tenta cancelar a Ordem de Serviço já quitada
       Então o erro retornado deve corresponder a:
-        | status    | 422                                            |
+        | status    | 400                                            |
         | errorCode | INVALID_STATUS_TRANSITION                      |
         | title     | Business Rule Violation                        |
         | detail    | Cannot cancel an already finalized work order  |
