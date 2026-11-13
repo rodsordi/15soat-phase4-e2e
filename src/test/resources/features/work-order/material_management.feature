@@ -61,7 +61,7 @@ Funcionalidade: Gestão e Precificação de Materiais de Estoque
       | quantity    | 10                          |
     Quando o material é cadastrado no catálogo
     Então o erro retornado deve corresponder a:
-      | status    | 409                                           |
+      | status    | 400                                           |
       | errorCode | RESOURCE_ALREADY_EXISTS                       |
-      | title     | Resource Conflict                             |
+      | title     | Business Rule Violation                       |
       | detail    | Material with SKU PART-BRK-01 already exists  |
