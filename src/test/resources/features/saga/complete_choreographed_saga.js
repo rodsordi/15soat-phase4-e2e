@@ -14,6 +14,7 @@ export const options = {
 };
 
 const BASE_URL = __ENV.GATEWAY_URL || 'http://localhost:8080';
+const AUTH_TOKEN = __ENV.AUTH_TOKEN || 'Bearer mock_saga_jwt_token';
 
 export default function () {
   const uniqueId = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
@@ -21,6 +22,7 @@ export default function () {
   const params = {
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': AUTH_TOKEN,
     },
   };
 
@@ -38,9 +40,13 @@ export default function () {
   if (openRes.status === 201) {
     const workOrderId = JSON.parse(openRes.body).id;
 
-    // 2. Approve Work Order
-    const approvePayload = JSON.stringify({ status: 'APPROVED', totalAmount: 500.0 });
-    const approveRes = http.patch(`${BASE_URL}/api/v1/work-orders/${workOrderId}/status`, approvePayload, params);
+    // 2. Diagnose & Budget Waiting Approval
+    http.patch(`${BASE_URL}/api/v1/work-orders/${workOrderId}`, JSON.stringify({ status: 'DIAGNOSING' }), params);
+    http.patch(`${BASE_URL}/api/v1/work-orders/${workOrderId}`, JSON.stringify({ status: 'WAITING_APPROVAL' }), params);
+
+    // 3. Customer Approves Work Order
+    const approvePayload = JSON.stringify({ status: 'APPROVED' });
+    const approveRes = http.patch(`${BASE_URL}/api/v1/work-orders/${workOrderId}`, approvePayload, params);
     check(approveRes, {
       'saga 2. approve status is 200': (r) => r.status === 200,
     });
@@ -62,7 +68,9 @@ export default function () {
       data: { id: `MP-${uniqueId}` },
       status: 'approved',
     });
-    const webRes = http.post(`${BASE_URL}/api/v1/payments/webhook`, webhookPayload, params);
+    const webRes = http.post(`${BASE_URL}/api/v1/payments/webhook`, webhookPayload, {
+      headers: { 'Content-Type': 'application/json' },
+    });
     check(webRes, {
       'saga 4. webhook confirm status is 200': (r) => r.status === 200,
     });
@@ -80,13 +88,13 @@ export default function () {
 
     if (execRes.status === 201) {
       const execId = JSON.parse(execRes.body).id;
-      http.patch(`${BASE_URL}/api/v1/executions/${execId}/status`, JSON.stringify({ status: 'COMPLETED' }), params);
+      http.patch(`${BASE_URL}/api/v1/executions/${execId}`, JSON.stringify({ status: 'COMPLETED' }), params);
     }
 
-    // 6. Verify final status
-    const finalRes = http.get(`${BASE_URL}/api/v1/work-orders/${workOrderId}`);
+    // 6. Verify Final State
+    const finalRes = http.get(`${BASE_URL}/api/v1/work-orders/${workOrderId}`, params);
     check(finalRes, {
-      'saga 6. get work order status is 200': (r) => r.status === 200,
+      'saga 6. verify final work order status is 200': (r) => r.status === 200,
     });
   }
 

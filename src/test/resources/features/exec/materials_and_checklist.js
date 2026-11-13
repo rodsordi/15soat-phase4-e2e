@@ -14,6 +14,7 @@ export const options = {
 };
 
 const BASE_URL = __ENV.GATEWAY_URL || 'http://localhost:8080';
+const AUTH_TOKEN = __ENV.AUTH_TOKEN || 'Bearer mock_mechanic_jwt_token';
 
 export default function () {
   const uniqueId = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
@@ -21,6 +22,7 @@ export default function () {
   const params = {
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': AUTH_TOKEN,
     },
   };
 

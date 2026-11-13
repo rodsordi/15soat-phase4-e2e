@@ -14,6 +14,7 @@ export const options = {
 };
 
 const BASE_URL = __ENV.GATEWAY_URL || 'http://localhost:8080';
+const AUTH_TOKEN = __ENV.AUTH_TOKEN || 'Bearer mock_employee_jwt_token';
 
 export default function () {
   const uniqueNum = Math.floor(1000 + Math.random() * 9000);
@@ -23,6 +24,7 @@ export default function () {
   const params = {
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': AUTH_TOKEN,
     },
   };
 
@@ -42,33 +44,44 @@ export default function () {
     const id = JSON.parse(openRes.body).id;
 
     // 2. Query Work Order
-    const getRes = http.get(`${BASE_URL}/api/v1/work-orders/${id}`);
+    const getRes = http.get(`${BASE_URL}/api/v1/work-orders/${id}`, params);
     check(getRes, {
       'get work order status is 200': (r) => r.status === 200,
     });
 
     // 3. Diagnose
-    const diagPayload = JSON.stringify({ status: 'DIAGNOSING', totalAmount: 0.0 });
-    http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, diagPayload, params);
+    const diagPayload = JSON.stringify({ status: 'DIAGNOSING' });
+    http.patch(`${BASE_URL}/api/v1/work-orders/${id}`, diagPayload, params);
 
-    // 4. Budget
-    const budgetPayload = JSON.stringify({ status: 'WAITING_FOR_APPROVAL', totalAmount: 450.0 });
-    http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, budgetPayload, params);
+    // 4. Budget Waiting Approval
+    const budgetPayload = JSON.stringify({ status: 'WAITING_APPROVAL' });
+    http.patch(`${BASE_URL}/api/v1/work-orders/${id}`, budgetPayload, params);
 
-    // 5. Approve
-    const approvePayload = JSON.stringify({ status: 'APPROVED', totalAmount: 450.0 });
-    const approveRes = http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, approvePayload, params);
+    // 5. Customer Approves
+    const approvePayload = JSON.stringify({ status: 'APPROVED' });
+    const approveRes = http.patch(`${BASE_URL}/api/v1/work-orders/${id}`, approvePayload, params);
     check(approveRes, {
       'approve work order status is 200': (r) => r.status === 200,
     });
 
-    // 6. Finish & Release
-    http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, JSON.stringify({ status: 'FINISHED' }), params);
-    http.patch(`${BASE_URL}/api/v1/work-orders/${id}/status`, JSON.stringify({ status: 'RELEASED' }), params);
+    // 6. Maintenance Executing
+    http.patch(`${BASE_URL}/api/v1/work-orders/${id}`, JSON.stringify({ status: 'EXECUTING' }), params);
+
+    // 7. Repairs Completed
+    http.patch(`${BASE_URL}/api/v1/work-orders/${id}`, JSON.stringify({ status: 'COMPLETED' }), params);
+
+    // 8. Settlement Confirmed (PAID)
+    http.patch(`${BASE_URL}/api/v1/work-orders/${id}`, JSON.stringify({ status: 'PAID' }), params);
+
+    // 9. Delivery Released
+    const deliverRes = http.patch(`${BASE_URL}/api/v1/work-orders/${id}`, JSON.stringify({ status: 'DELIVERED' }), params);
+    check(deliverRes, {
+      'deliver work order status is 200': (r) => r.status === 200,
+    });
   }
 
-  // 7. Metrics Query
-  const metricRes = http.get(`${BASE_URL}/api/v1/work-orders/metrics/average-time`);
+  // 10. Metrics Query
+  const metricRes = http.get(`${BASE_URL}/api/v1/work-orders/metrics`, params);
   check(metricRes, {
     'metrics query returns 200 or 204': (r) => r.status === 200 || r.status === 204,
   });

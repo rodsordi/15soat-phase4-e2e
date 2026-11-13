@@ -14,6 +14,7 @@ export const options = {
 };
 
 const BASE_URL = __ENV.GATEWAY_URL || 'http://localhost:8080';
+const AUTH_TOKEN = __ENV.AUTH_TOKEN || 'Bearer mock_mechanic_jwt_token';
 
 export default function () {
   const uniqueId = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
@@ -21,6 +22,7 @@ export default function () {
   const params = {
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': AUTH_TOKEN,
     },
   };
 
@@ -44,7 +46,7 @@ export default function () {
       status: 'IN_REPAIR',
       notes: 'Repair started by technician',
     });
-    const repairRes = http.patch(`${BASE_URL}/api/v1/executions/${id}/status`, repairPayload, params);
+    const repairRes = http.patch(`${BASE_URL}/api/v1/executions/${id}`, repairPayload, params);
     check(repairRes, {
       'in_repair status is 200': (r) => r.status === 200,
     });
@@ -54,7 +56,7 @@ export default function () {
       status: 'COMPLETED',
       notes: 'Repair completed with all checks passed',
     });
-    const completeRes = http.patch(`${BASE_URL}/api/v1/executions/${id}/status`, completePayload, params);
+    const completeRes = http.patch(`${BASE_URL}/api/v1/executions/${id}`, completePayload, params);
     check(completeRes, {
       'complete status is 200': (r) => r.status === 200,
     });

@@ -5,6 +5,12 @@ public class EnvironmentConfig {
     private static final String ENV = System.getProperty("env", "local");
     private static final String GATEWAY_URL = System.getProperty("gateway.url",
             System.getenv().getOrDefault("API_GATEWAY_URL", "http://localhost:8000"));
+    private static final String GATEWAY_HOST = System.getProperty("gateway.host",
+            System.getenv().getOrDefault("API_GATEWAY_HOST", ""));
+
+    public static String getGatewayHost() {
+        return GATEWAY_HOST;
+    }
 
     public static String getWorkOrderBaseUrl() {
         if ("prd".equalsIgnoreCase(ENV)) {
@@ -25,6 +31,13 @@ public class EnvironmentConfig {
             return GATEWAY_URL;
         }
         return System.getProperty("exec.url", "http://localhost:8083");
+    }
+
+    public static String getAuthLambdaBaseUrl() {
+        if ("prd".equalsIgnoreCase(ENV)) {
+            return GATEWAY_URL;
+        }
+        return System.getProperty("auth.lambda.url", "http://localhost:8080");
     }
 
     public static String getActiveEnvironment() {

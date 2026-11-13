@@ -6,18 +6,22 @@ Funcionalidade: Gestão de Materiais de Estoque e Checklists Técnicos
   Para garantir controle de peças utilizadas e qualidade nos procedimentos da oficina
 
   # ============================================================================
-  # Contexto: Disponibilidade Operacional do Serviço de Execução
+  # Contexto: Disponibilidade Operacional do Serviço e Mecânico Autenticado
   # ============================================================================
   Contexto:
     Dado que o serviço de Execução da Oficina está em execução e operacional
-    E uma ordem de execução criada com identificador válido
+    E que o mecânico responsável está devidamente autenticado com perfil "EMPLOYEE"
+    E uma ordem de execução é enfileirada para a Ordem de Serviço com o técnico "TECH-101"
 
   # ============================================================================
   # Cenário 1: Cadastro e Vínculo de Material / Peça de Estoque
   # ============================================================================
   @cadastro-material
   Cenário: Registro de material e insumo utilizado no reparo
-    Quando um novo material com código "PART-BRK-01", descrição "Pastilha de Freio Dianteira" e quantidade 2 é registrado
+    Quando o material com os seguintes dados é registrado na manutenção:
+      | materialCode | PART-BRK-01                |
+      | description  | Pastilha de Freio Dianteira|
+      | quantity     | 2                          |
     Então o material deve ser computado com sucesso na manutenção
 
   # ============================================================================
@@ -25,6 +29,21 @@ Funcionalidade: Gestão de Materiais de Estoque e Checklists Técnicos
   # ============================================================================
   @checklist-inspecao
   Cenário: Preenchimento e validação de checklist de inspeção veicular
-    Quando o mecânico registra o item de checklist "Verificar fluido de freio" como concluído
-    E o mecânico registra o item de checklist "Inspecionar suspensão e amortecedores" como concluído
+    Quando o mecânico registra os seguintes itens de checklist:
+      | task                                | completed |
+      | Verificar fluido de freio           | true      |
+      | Inspecionar suspensão e amortecedor | true      |
     Então os itens de checklist devem ser persistidos com sucesso no MongoDB
+
+  # ============================================================================
+  # Cenário 3: Consulta Consolidada do Histórico Documental da Manutenção
+  # ============================================================================
+  @consulta-consolidada
+  Cenário: Consulta dos detalhes consolidados da manutenção veicular com materiais e checklist
+    Quando o material com os seguintes dados é registrado na manutenção:
+      | materialCode | PART-FLT-02          |
+      | description  | Filtro de Óleo Motor |
+      | quantity     | 1                    |
+    E o mecânico registra o item de checklist "Substituição do filtro de óleo" como concluído
+    E o mecânico consulta os detalhes consolidados da execução por ID
+    Então os dados consolidados devem conter os materiais e itens de checklist registrados
