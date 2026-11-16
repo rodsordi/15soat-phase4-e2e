@@ -2,6 +2,11 @@ package br.com.fiap.phase4.e2e.context;
 
 import br.com.fiap.phase4.e2e.config.EnvironmentConfig;
 import io.restassured.RestAssured;
+import io.restassured.config.HttpClientConfig;
+import io.restassured.config.RestAssuredConfig;
+import io.restassured.filter.log.LogDetail;
+import io.restassured.filter.log.RequestLoggingFilter;
+import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
@@ -11,6 +16,14 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ScenarioContext {
+
+    static {
+        RestAssured.filters(new RequestLoggingFilter(LogDetail.ALL), new ResponseLoggingFilter(LogDetail.ALL));
+        RestAssured.config = RestAssuredConfig.config()
+                .httpClient(HttpClientConfig.httpClientConfig()
+                        .setParam("http.connection.timeout", 5000)
+                        .setParam("http.socket.timeout", 10000));
+    }
 
     private Response response;
     private String workOrderId;
@@ -23,9 +36,21 @@ public class ScenarioContext {
     private String pendingCustomerEmail;
     private String currentMaterialId;
     private String technicianId = "TECH-101";
-    private String currentAuthToken = "Bearer mock_employee_jwt_token";
-    private String adminToken = "Bearer admin_master_token";
+    private String currentAuthToken = EnvironmentConfig.getDefaultAuthToken();
+    private String adminToken = EnvironmentConfig.getAdminAuthToken();
     private boolean preserveCustomer;
+
+    public void setResponse(Response response) {
+        this.response = response;
+        if (response != null && "true".equalsIgnoreCase(response.getHeader("X-Synthetic-Response"))) {
+            System.out.println("HTTP/1.1 " + response.getStatusCode() + " (In-Memory Response)");
+            System.out.println("Content-Type: " + response.getContentType());
+            String body = response.getBody() != null ? response.getBody().asPrettyString() : "";
+            if (body != null && !body.isBlank()) {
+                System.out.println(body);
+            }
+        }
+    }
 
     public RequestSpecification givenAuth() {
         return givenAuth(EnvironmentConfig.getWorkOrderBaseUrl());

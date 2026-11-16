@@ -85,7 +85,6 @@ C4Container
     Container_Boundary(b_edge, "2. Camada de Borda & Serverless (iac-lambda)") {
         Container(nlb, "AWS Network Load Balancer (NLB)", "AWS NLB", "Entrada de rede de alta performance (L4)<br/>para o cluster EKS.")
         Container(apigw, "AWS HTTP API Gateway v2", "AWS API Gateway", "Ponto de entrada público para rotas<br/>serverless e recepção de webhooks.")
-        Container(authorizer, "Lambda Token Authorizer", "Node.js 20 / Lambda", "Validação de tokens de autorização<br/>e emissão de contexto seguro.")
         Container(webhook, "Lambda Mercado Pago Webhook", "Node.js 20 / Lambda", "Recepção e validação de callbacks<br/>de notificação de pagamento Pix.")
     }
 
@@ -113,7 +112,6 @@ C4Container
     Rel_Down(customer, nlb, "Consulta OS e aprova orçamentos", "HTTPS / JSON")
     Rel_Down(mechanic, nlb, "Gerencia ordens de serviço<br/>e manutenções", "HTTPS / JSON")
 
-    Rel(apigw, authorizer, "Invoca validação<br/>de autenticação", "AWS Lambda Invoke")
     Rel(apigw, webhook, "Roteia payloads de<br/>notificação Pix", "AWS Lambda Invoke")
     Rel(webhook, nlb, "Encaminha notificação<br/>confirmada", "HTTPS / JSON")
 
@@ -195,6 +193,26 @@ sequenceDiagram
 
 ## Funcionalidades, Diagramas & Testes de Carga (1:1 por Fluxo)
 
+### Matriz Geral de Rastreabilidade e Cobertura (Requisitos Fase 4)
+
+A tabela abaixo consolida a rastreabilidade ponta a ponta entre as especificações de negócio em BDD (Gherkin), a modelagem formal de interação em diagramas de sequência, os scripts de teste de carga e estresse (k6), os microsserviços proprietários e a estratégia de persistência poliglota adotada (Database-per-Service):
+
+| Domínio / Bounded Context | Especificação BDD (`.feature`) | Diagrama de Sequência (`.md`) | Teste de Carga k6 (`.js`) | Microsserviços Envolvidos | Persistência |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Clientes e Veículos** | [`customer_vehicle_management.feature`](src/test/resources/features/work-order/customer_vehicle_management.feature) | [`customer_vehicle_management.md`](src/test/resources/features/work-order/customer_vehicle_management.md) | [`customer_vehicle_management.js`](src/test/resources/features/work-order/customer_vehicle_management.js) | `api-work-order` | PostgreSQL (SQL) |
+| **Catálogo de Serviços** | [`service_catalog_management.feature`](src/test/resources/features/work-order/service_catalog_management.feature) | [`service_catalog_management.md`](src/test/resources/features/work-order/service_catalog_management.md) | [`service_catalog_management.js`](src/test/resources/features/work-order/service_catalog_management.js) | `api-work-order` | PostgreSQL (SQL) |
+| **Materiais e Peças** | [`material_management.feature`](src/test/resources/features/work-order/material_management.feature) | [`material_management.md`](src/test/resources/features/work-order/material_management.md) | [`material_management.js`](src/test/resources/features/work-order/material_management.js) | `api-work-order` | PostgreSQL (SQL) |
+| **Ciclo de Vida da OS (7 Etapas)** | [`work_order_lifecycle.feature`](src/test/resources/features/work-order/work_order_lifecycle.feature) | [`work_order_lifecycle.md`](src/test/resources/features/work-order/work_order_lifecycle.md) | [`work_order_lifecycle.js`](src/test/resources/features/work-order/work_order_lifecycle.js) | `api-work-order` | PostgreSQL (SQL) |
+| **Faturamento e Checkout Pix** | [`invoice_generation.feature`](src/test/resources/features/billing/invoice_generation.feature) | [`invoice_generation.md`](src/test/resources/features/billing/invoice_generation.md) | [`invoice_generation.js`](src/test/resources/features/billing/invoice_generation.js) | `api-billing` | PostgreSQL (SQL) |
+| **Processamento de Webhook & Liquidação** | [`payment_webhook_processing.feature`](src/test/resources/features/billing/payment_webhook_processing.feature) | [`payment_webhook_processing.md`](src/test/resources/features/billing/payment_webhook_processing.md) | [`payment_webhook_processing.js`](src/test/resources/features/billing/payment_webhook_processing.js) | `api-billing`, `lambda-webhook` | PostgreSQL (SQL) |
+| **Materiais & Checklist Técnico** | [`materials_and_checklist.feature`](src/test/resources/features/exec/materials_and_checklist.feature) | [`materials_and_checklist.md`](src/test/resources/features/exec/materials_and_checklist.md) | [`materials_and_checklist.js`](src/test/resources/features/exec/materials_and_checklist.js) | `api-exec` | MongoDB (NoSQL) |
+| **Fila de Execução & Reparo** | [`execution_queue_and_repair.feature`](src/test/resources/features/exec/execution_queue_and_repair.feature) | [`execution_queue_and_repair.md`](src/test/resources/features/exec/execution_queue_and_repair.md) | [`execution_queue_and_repair.js`](src/test/resources/features/exec/execution_queue_and_repair.js) | `api-exec` | MongoDB (NoSQL) |
+| **Saga Coreografada & Rollback** | [`choreographed_saga.feature`](src/test/resources/features/saga/choreographed_saga.feature) | [`choreographed_saga.md`](src/test/resources/features/saga/choreographed_saga.md) | [`choreographed_saga.js`](src/test/resources/features/saga/choreographed_saga.js) | `api-work-order`, `api-billing`, `api-exec`, `Apache Kafka` | Poliglota (PostgreSQL + MongoDB) |
+| **Autenticação OIDC & Emissão JWT** | [`user_authentication.feature`](src/test/resources/features/auth-lambda/user_authentication.feature) | [`user_authentication.md`](src/test/resources/features/auth-lambda/user_authentication.md) | *N/A (Serverless / IAM)* | `Keycloak`, `lambda-auth` | PostgreSQL (Keycloak DB) |
+| **Gestão & Provisionamento de Identidades** | [`user_identity_management.feature`](src/test/resources/features/auth-lambda/user_identity_management.feature) | [`user_identity_management.md`](src/test/resources/features/auth-lambda/user_identity_management.md) | *N/A (Serverless / IAM)* | `Keycloak`, `api-work-order`, `lambda-auth` | Poliglota (Keycloak DB + PostgreSQL) |
+
+---
+
 ### 1. Microsserviço de Ordens de Serviço (`features/work-order/`)
 - 📊 **Modelo de Dados & MER**: [`MODEL.md`](../15soat-phase4-api-work-order/MODEL.md) *(PostgreSQL - Clientes, Veículos, OS, Itens com Snapshot e Histórico)*
 - **Gestão de Clientes e Veículos**:
@@ -205,6 +223,10 @@ sequenceDiagram
   - Especificação BDD: [`service_catalog_management.feature`](src/test/resources/features/work-order/service_catalog_management.feature)
   - Diagrama de Sequência: [`service_catalog_management.md`](src/test/resources/features/work-order/service_catalog_management.md)
   - Teste de Carga (k6): [`service_catalog_management.js`](src/test/resources/features/work-order/service_catalog_management.js)
+- **Gestão de Materiais e Peças**:
+  - Especificação BDD: [`material_management.feature`](src/test/resources/features/work-order/material_management.feature)
+  - Diagrama de Sequência: [`material_management.md`](src/test/resources/features/work-order/material_management.md)
+  - Teste de Carga (k6): [`material_management.js`](src/test/resources/features/work-order/material_management.js)
 - **Ciclo de Vida Completo da Ordem de Serviço (7 Etapas)**:
   - Especificação BDD: [`work_order_lifecycle.feature`](src/test/resources/features/work-order/work_order_lifecycle.feature)
   - Diagrama de Sequência: [`work_order_lifecycle.md`](src/test/resources/features/work-order/work_order_lifecycle.md)
@@ -233,19 +255,18 @@ sequenceDiagram
   - Teste de Carga (k6): [`execution_queue_and_repair.js`](src/test/resources/features/exec/execution_queue_and_repair.js)
 
 ### 4. Padrão Saga Distribuída Coreografada (`features/saga/`)
-- **Saga Coreografada - Caminho Feliz (Happy Path)**:
-  - Especificação BDD: [`complete_choreographed_saga.feature`](src/test/resources/features/saga/complete_choreographed_saga.feature)
-  - Diagrama de Sequência: [`complete_choreographed_saga.md`](src/test/resources/features/saga/complete_choreographed_saga.md)
-  - Teste de Carga (k6): [`complete_choreographed_saga.js`](src/test/resources/features/saga/complete_choreographed_saga.js)
-- **Saga Coreografada - Rollback Compensatório por Falha de Pagamento**:
-  - Especificação BDD: [`compensating_saga_rollback.feature`](src/test/resources/features/saga/compensating_saga_rollback.feature)
-  - Diagrama de Sequência: [`compensating_saga_rollback.md`](src/test/resources/features/saga/compensating_saga_rollback.md)
-  - Teste de Carga (k6): [`compensating_saga_rollback.js`](src/test/resources/features/saga/compensating_saga_rollback.js)
+- **Saga Coreografada - Ciclo Completo e Transações Compensatórias**:
+  - Especificação BDD: [`choreographed_saga.feature`](src/test/resources/features/saga/choreographed_saga.feature)
+  - Diagramas de Sequência: [`choreographed_saga.md`](src/test/resources/features/saga/choreographed_saga.md)
+  - Teste de Carga (k6): [`choreographed_saga.js`](src/test/resources/features/saga/choreographed_saga.js)
 
-### 5. Lambda Serverless de Autenticação (`features/auth-lambda/`)
-- **Token Authorizer e Segurança da API**:
-  - Especificação BDD: [`auth_token_authorizer.feature`](src/test/resources/features/auth-lambda/auth_token_authorizer.feature)
-  - Diagrama de Sequência: [`auth_token_authorizer.md`](src/test/resources/features/auth-lambda/auth_token_authorizer.md)
+### 5. Autenticação & Gestão de Identidades IAM (`features/auth-lambda/`)
+- **Autenticação de Usuários e Emissão de Tokens JWT**:
+  - Especificação BDD: [`user_authentication.feature`](src/test/resources/features/auth-lambda/user_authentication.feature)
+  - Diagrama de Sequência: [`user_authentication.md`](src/test/resources/features/auth-lambda/user_authentication.md)
+- **Gestão e Provisionamento de Identidades de Usuários**:
+  - Especificação BDD: [`user_identity_management.feature`](src/test/resources/features/auth-lambda/user_identity_management.feature)
+  - Diagrama de Sequência: [`user_identity_management.md`](src/test/resources/features/auth-lambda/user_identity_management.md)
   *(Observação: conforme especificação arquitetural, funções serverless Lambda não possuem scripts de carga k6).*
 
 ---
@@ -267,6 +288,7 @@ mvn clean test -Denv=prd -Dgateway.url=http://api.fiap-oficina.local
 # Fluxos de Ordem de Serviço
 k6 run src/test/resources/features/work-order/customer_vehicle_management.js
 k6 run src/test/resources/features/work-order/service_catalog_management.js
+k6 run src/test/resources/features/work-order/material_management.js
 k6 run src/test/resources/features/work-order/work_order_lifecycle.js
 
 # Fluxos de Faturamento e Pagamentos
@@ -277,7 +299,6 @@ k6 run src/test/resources/features/billing/payment_webhook_processing.js
 k6 run src/test/resources/features/exec/materials_and_checklist.js
 k6 run src/test/resources/features/exec/execution_queue_and_repair.js
 
-# Fluxos da Saga Coreografada
-k6 run src/test/resources/features/saga/complete_choreographed_saga.js
-k6 run src/test/resources/features/saga/compensating_saga_rollback.js
+# Fluxo da Saga Coreografada
+k6 run src/test/resources/features/saga/choreographed_saga.js
 ```

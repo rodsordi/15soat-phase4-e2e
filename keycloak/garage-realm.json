@@ -1,0 +1,158 @@
+{
+  "id": "garage",
+  "realm": "garage",
+  "displayName": "Garage Auto Repair Realm",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN",
+        "description": "Administrator Role"
+      },
+      {
+        "name": "EMPLOYEE",
+        "description": "Employee / Mechanic / Attendant Role"
+      },
+      {
+        "name": "CUSTOMER",
+        "description": "Customer Role"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "garage-client",
+      "name": "Garage Client Application",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "protocol": "openid-connect"
+    }
+  ],
+  "users": [
+    {
+      "username": "admin_user",
+      "enabled": true,
+      "email": "admin@garage.fiap.com.br",
+      "firstName": "Admin",
+      "lastName": "Master",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "AdminPassword123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN"
+      ],
+      "attributes": {
+        "role": ["ADMIN"]
+      }
+    },
+    {
+      "username": "86266070087",
+      "enabled": true,
+      "email": "attendant@garage.fiap.com.br",
+      "firstName": "Carlos",
+      "lastName": "Atendente",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "StrongP@ss2026",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "EMPLOYEE"
+      ],
+      "attributes": {
+        "document": ["86266070087"],
+        "cpf": ["86266070087"],
+        "documentType": ["CPF"],
+        "role": ["EMPLOYEE"]
+      }
+    },
+    {
+      "username": "mechanic_user",
+      "enabled": true,
+      "email": "mechanic@garage.fiap.com.br",
+      "firstName": "Roberto",
+      "lastName": "Mecanico",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "MechanicPass123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "EMPLOYEE"
+      ],
+      "attributes": {
+        "role": ["EMPLOYEE"]
+      }
+    },
+    {
+      "username": "43768298096",
+      "enabled": true,
+      "email": "cliente.teste@example.com",
+      "firstName": "Ana",
+      "lastName": "Cliente",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CustomerPass123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "CUSTOMER"
+      ],
+      "attributes": {
+        "document": ["43768298096"],
+        "cpf": ["43768298096"],
+        "documentType": ["CPF"],
+        "role": ["CUSTOMER"]
+      }
+    },
+    {
+      "username": "52998224725",
+      "enabled": true,
+      "email": "joao.silva@example.com",
+      "firstName": "Joao",
+      "lastName": "Silva",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CustomerPass123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "CUSTOMER"
+      ],
+      "attributes": {
+        "document": ["52998224725"],
+        "cpf": ["52998224725"],
+        "documentType": ["CPF"],
+        "role": ["CUSTOMER"]
+      }
+    }
+  ]
+}

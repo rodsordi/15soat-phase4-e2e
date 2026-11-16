@@ -32,10 +32,11 @@ Decidiu-se **padronizar a construção e a renderização dos diagramas de sequ�
      - `Kong-->>-Atendente: Retorno final` (fecha thread no gateway)
    - **Atores Humanos e Broker Kafka sem Threads**: Atores humanos (`Cliente`, `Atendente`, `Mecânico`) e o barramento assíncrono (`Kafka`) não representam processos de execução contínua de software, portanto **nunca** devem receber barras de ativação (`+`/`-`).
 
-3. **Fronteira Delimitada de Sessão Autenticada**:
-   - A nota de sessão autenticada deve delimitar com precisão a borda HTTP entre os atores chamadores e o Gateway:
-     - `Note over <Atores>,Kong: 🔒 Sessão Autenticada: Requisições utilizam Bearer JWT (Role: ...)`
+3. **Fronteira Delimitada de Sessão Autenticada e Borda Segura**:
+   - A nota de sessão perimetral deve delimitar com precisão a borda HTTP entre os atores chamadores e os microsserviços privados, referenciando explicitamente a obtenção de tokens via Keycloak e a autorização perimetral:
+     - `Note over <Atores>,<Serviço>: 🔒 Borda Autenticada via Bearer JWT (vide user_authentication.md):<br/>Requisições utilizam token OIDC emitido pelo Keycloak (Role: ...)`
    - Deixar explícito que filas internas (Kafka) e bancos de dados não pertencem à sessão Bearer JWT.
+   - Complementar no texto Markdown (fora do SVG) com um callout `[!NOTE]` contendo o link hipertexto navegável para `user_authentication.md` (emissão de credenciais).
 
 4. **Anulação de Compressão de SVG e Garantia de Rolagem Horizontal (IntelliJ IDEA & Browsers)**:
    - Para impedir que IDEs (como IntelliJ IDEA / JCEF) ou visualizadores Markdown forcem `max-width: 100%` no SVG e reduzam as fontes a tamanhos ilegíveis, todo diagrama deve ser envolvido pelo seguinte padrão CSS:
@@ -55,12 +56,15 @@ Decidiu-se **padronizar a construção e a renderização dos diagramas de sequ�
      ```
      </div>
      ```
-   - **Matriz de Dimensionamento por Quantidade de Participantes**:
-     - **3 a 4 participantes**: `1100px` (ex: `auth_token_authorizer.md`, `material_management.md`).
-     - **5 participantes**: `1300px` (ex: `employee_identity_management.md`, `execution_queue_and_repair.md`).
-     - **6 participantes**: `1550px` (ex: `customer_vehicle_management.md`, `compensating_saga_rollback.md`).
-     - **7 participantes**: `1750px` (ex: `complete_choreographed_saga.md`).
-     - **8 ou mais participantes / Sagas distribuídas com gateways externos**: `2000px` (ex: `work_order_lifecycle.md`).
+   - **Abstração Direta (Sem Gateway como Participante Pass-Through)**:
+     - O participante intermediário de borda (Kong Gateway / API Gateway) é omitido como coluna repetitiva nos diagramas de domínio e coreografia, sendo declarado na nota inicial de borda segura com referência canônica: `🔒 Borda Autenticada via Bearer JWT (vide user_authentication.md): Requisições utilizam token OIDC`.
+     - Isso elimina setas redundantes de proxy (`Ator -> Kong -> Microsserviço`) e reduz a largura total do diagrama, permitindo excelente legibilidade em IDEs (IntelliJ IDEA) e no GitHub.
+
+   - **Matriz de Dimensionamento Otimizada por Quantidade de Participantes**:
+     - **3 participantes**: `850px` a `900px` (ex: `service_catalog_management.md`, `material_management.md`, `materials_and_checklist.md`, `payment_webhook_processing.md`).
+     - **4 participantes**: `1050px` (ex: `invoice_generation.md`, `execution_queue_and_repair.md`).
+     - **5 participantes**: `1200px` a `1250px` (ex: `customer_vehicle_management.md`, `user_authentication.md`, `choreographed_saga.md` - Cenários 1 e 2).
+     - **6 a 7 participantes / Ciclos Completos**: `1200px` a `1450px` (ex: `work_order_lifecycle.md`, `choreographed_saga.md` - Cenário 3).
 
 ## Consequências
 

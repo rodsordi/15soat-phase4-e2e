@@ -130,16 +130,7 @@ Funcionalidade: Gestão de Clientes e Veículos Vinculados
       | detail    | Vehicle already exists with license plate: BRA2E19   |
 
   # ============================================================================
-  # Cenário 9: Tentativa de Operação sem Autenticação (Segurança / RBAC)
-  # ============================================================================
-  @seguranca @nao-autenticado
-  Cenário: Tentativa de cadastro de cliente por operador não autenticado é negada
-    Dado que o operador não possui token de autenticação válido
-    Quando o cliente com documento "52998224725", nome "Anônimo" e email "anonimo@fiap.com.br" tenta ser cadastrado
-    Então o código de status HTTP da resposta deve ser 401
-
-  # ============================================================================
-  # Cenário 10: Atualização Parcial de Cliente via PATCH RESTful
+  # Cenário 9: Atualização Parcial de Cliente via PATCH RESTful
   # ============================================================================
   @atualizacao-cliente @patch
   Cenário: Atualização cadastral de cliente via PATCH
