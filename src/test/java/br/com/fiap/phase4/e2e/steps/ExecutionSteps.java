@@ -1,5 +1,6 @@
 package br.com.fiap.phase4.e2e.steps;
 
+import br.com.fiap.phase4.e2e.auth.AuthTokenService;
 import br.com.fiap.phase4.e2e.context.ScenarioContext;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Entao;
@@ -24,7 +25,7 @@ public class ExecutionSteps {
 
     @Dado("que o mecânico responsável está devidamente autenticado com perfil {string}")
     public void mechanicIsAuthenticated(String role) {
-        context.setCurrentAuthToken("Bearer valid_" + role.toLowerCase() + "_token");
+        context.setCurrentAuthToken(AuthTokenService.getTokenForRole(role));
     }
 
     @Dado("uma ordem de execução criada com identificador válido")

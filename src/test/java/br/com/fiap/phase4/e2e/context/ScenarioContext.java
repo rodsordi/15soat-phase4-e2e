@@ -1,5 +1,6 @@
 package br.com.fiap.phase4.e2e.context;
 
+import br.com.fiap.phase4.e2e.auth.AuthTokenService;
 import br.com.fiap.phase4.e2e.config.EnvironmentConfig;
 import io.restassured.RestAssured;
 import io.restassured.config.HttpClientConfig;
@@ -36,8 +37,8 @@ public class ScenarioContext {
     private String pendingCustomerEmail;
     private String currentMaterialId;
     private String technicianId = "TECH-101";
-    private String currentAuthToken = EnvironmentConfig.getDefaultAuthToken();
-    private String adminToken = EnvironmentConfig.getAdminAuthToken();
+    private String currentAuthToken = AuthTokenService.getTokenForRole("EMPLOYEE");
+    private String adminToken = AuthTokenService.getTokenForRole("ADMIN");
     private boolean preserveCustomer;
 
     public void setResponse(Response response) {
