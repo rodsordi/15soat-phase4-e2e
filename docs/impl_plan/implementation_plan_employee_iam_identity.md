@@ -17,6 +17,8 @@ Para suportar esse fluxo de forma moderna e desacoplada:
 
 ## 2. Desenho Arquitetural da Solução
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -55,6 +57,8 @@ sequenceDiagram
     WO-->>-Kong: 201 Created (CustomerResponse)
     Kong-->>-Func: 201 Created
 ```
+
+</div>
 
 ---
 

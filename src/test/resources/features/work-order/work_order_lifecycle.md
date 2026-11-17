@@ -23,6 +23,8 @@ Este diagrama documenta o fluxo operacional completo das 8 fases da Ordem de Ser
 
 ---
 
+<div style="overflow-x: auto; zoom: 2; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -221,3 +223,5 @@ sequenceDiagram
     WO-->>-Ator: Retorna 200 OK
     Ator-->>Cli: Entrega do veículo reparado<br/>e chaves ao cliente
 ```
+
+</div>

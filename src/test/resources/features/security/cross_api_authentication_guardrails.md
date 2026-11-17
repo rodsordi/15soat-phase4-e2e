@@ -17,6 +17,8 @@ Qualquer requisição que atinja os microsserviços sem o cabeçalho `Authorizat
 
 ## 2. Diagrama de Sequência: Bloqueio Transversal de Requisições Não Autenticadas (HTTP 401)
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -62,3 +64,5 @@ sequenceDiagram
         SecFilter-->>-Ator: 200 OK / 201 Created
     end
 ```
+
+</div>

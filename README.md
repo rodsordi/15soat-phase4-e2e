@@ -21,6 +21,8 @@ A arquitetura macro está detalhada a seguir segundo os níveis canônicos do **
 
 Apresenta os usuários do sistema, os limites da solução de oficina mecânica e a integração com sistemas externos de pagamento:
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 C4Context
     title Diagrama de Contexto de Sistema - Sistema de Gestão de Oficina Mecânica (Fase 4)
@@ -45,11 +47,15 @@ C4Context
     UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="1")
 ```
 
+</div>
+
 ---
 
 ### 2. Nível 2: Diagrama de Contêineres (Containers)
 
 Detalhamento de todos os contêineres de aplicação, mensageria distribuída, bancos de dados relacionais e NoSQL, proxies de borda e funções serverless:
+
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
 
 ```mermaid
 C4Container
@@ -116,11 +122,15 @@ C4Container
     UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")
 ```
 
+</div>
+
 ---
 
 ### 3. Visão Dinâmica: Coreografia da Saga Distribuída (Choreographed Saga)
 
 Ilustra o comportamento temporal e as trocas assíncronas de mensagens via Apache Kafka entre os microsserviços durante o ciclo de vida da Ordem de Serviço, em conformidade com a ADR-004 e especificado em [`choreographed_saga.md`](src/test/resources/features/saga/choreographed_saga.md):
+
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
 
 ```mermaid
 sequenceDiagram
@@ -221,6 +231,8 @@ sequenceDiagram
         deactivate OS
     end
 ```
+
+</div>
 
 ---
 

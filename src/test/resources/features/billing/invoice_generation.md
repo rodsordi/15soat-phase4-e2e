@@ -13,6 +13,8 @@ Este diagrama documenta a arquitetura completa da API de Faturamento cobrindo to
 
 ---
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -79,3 +81,5 @@ sequenceDiagram
     DB-->>-Billing: Confirma atualização
     Billing-->>-Analista: 200 OK (CheckoutResponse com QR Code PIX)
 ```
+
+</div>

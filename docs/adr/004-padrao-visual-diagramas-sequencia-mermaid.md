@@ -8,7 +8,7 @@ O projeto E2E adota documentação viva através de diagramas de sequência Merm
 A implementação inicial apresentava os seguintes desafios visuais:
 1. **Espaçamento Excessivo entre Componentes**:
    - Mensagens com payloads inline muito longos (ex: `POST /api/v1/customers { document: "52998224725", name, email }`) forçavam o motor de renderização do Mermaid a afastar horizontalmente as colunas dos participantes.
-   - O container HTML possuía uma largura mínima fixa (`min-width: 900px`), o que causava vazios visuais desnecessários em diagramas com apenas 4 participantes e forçava barra de rolagem horizontal desnecessária em telas de laptops ou janelas lado a lado (split screen).
+   - O container HTML anterior utilizava aninhamento de múltiplas tags (`<div><div>...</div></div>`) com largura fixa indiscriminada (`min-width: 900px`) sem zoom, o que causava o anti-pattern *Div Soup* e vazios visuais quando aplicado a fluxos curtos, além de forçar barra de rolagem desnecessária em telas de laptops ou janelas lado a lado (split screen).
 2. **Ausência de Indicação de Ciclo de Vida da Thread (Activation Boxes)**:
    - As linhas de vida dos componentes permaneciam tracejadas do início ao fim, sem indicar quando um componente estava ativamente alocando recursos, executando processamento ou aguardando resposta de I/O em banco de dados.
 
@@ -38,10 +38,23 @@ Decidiu-se **padronizar a construção e a renderização dos diagramas de sequ�
    - Deixar explícito que filas internas (Kafka) e bancos de dados não pertencem à sessão Bearer JWT.
    - Complementar no texto Markdown (fora do SVG) com um callout `[!NOTE]` contendo o link hipertexto navegável para `user_authentication.md` (emissão de credenciais).
 
-4. **Padrão "Pure Mermaid First" (Erradicação de Divs e Tags de Estilo)**:
-   - Os diagramas Mermaid devem ser emitidos **exclusivamente na sintaxe nativa e limpa de Markdown** (fenced code block ```mermaid ... ```).
-   - **É terminantemente proibido adicionar `<div>` ao redor dos diagramas Mermaid ou injetar tags `<style>` com regras globais** (como `.mermaid svg { ... }`), prevenindo o anti-pattern "Div Soup", garantindo portabilidade entre IDEs (IntelliJ, VS Code) e renderizadores nativos (GitHub, GitLab, Docusaurus) e evitando bloqueios por políticas de segurança CSP.
-   - **Legibilidade e Anti-Compressão Nativas**: A legibilidade visual de diagramas densos é obtida estritamente através da modelagem e sintaxe intrínseca do Mermaid:
+4. **Padronização de Viewport com 1 Div Simples em Linha Única, Zoom 1.5 e Rolagem Horizontal**:
+   - Todo diagrama Mermaid de médio ou grande porte (diagramas de sequência de ponta a ponta, diagramas ERD relacionais ou arquiteturas de múltiplos serviços) deve ser encapsulado obrigatoriamente por **exatamente uma única tag `<div>`**, declarada em **uma única linha**, garantindo rolagem horizontal (`overflow-x: auto;`), dimensionamento com largura mínima (`min-width: 900px;`) e fator de ampliação visual de 150% (`zoom: 1.5;`):
+````markdown
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
+```mermaid
+...
+```
+
+</div>
+````
+   - **Regras Estritas de Higiene**:
+     - **Linha Única**: A tag de abertura `<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">` deve constar inteira em uma única linha, sem quebras dentro da tag.
+     - **Sem Divs Aninhadas ("Div Soup")**: É terminantemente proibido aninhar múltiplos contêineres (`<div><div>...</div></div>`).
+     - **Sem Tags `<style>` Globais**: Proibido injetar blocos `<style>` com regras globais (`.mermaid svg { ... }`).
+   - **Exceção para Diagramas Pequenos**: Diagramas pequenos (poucos nós, fluxo linear simples de 2 a 3 participantes ou estados curtos) **não devem** utilizar a div, permanecendo em sintaxe pura *Pure Mermaid* para evitar barras de rolagem artificiais em diagramas concisos.
+   - **Legibilidade e Anti-Compressão Complementares**: A legibilidade visual interna dos diagramas complementa o zoom através de modelagem limpa do Mermaid:
      - Quebras de linha com `<br/>` em mensagens e payloads (mantendo as lifelines próximas horizontalmente).
      - Empilhamento de rótulos dos participantes (`Nome<br/>(Papel)`).
      - Numeração automática com `autonumber`.
@@ -57,12 +70,12 @@ Decidiu-se **padronizar a construção e a renderização dos diagramas de sequ�
 ## Consequências
 
 ### Positivas
-- **Pure Markdown & Zero Div Soup**: Documentação limpa, portátil e renderizada nativamente em qualquer plataforma sem poluição de tags HTML.
+- **Legibilidade Ampliada & Zoom Confortável**: Fator de escala de 150% (`zoom: 1.5;`) garante leitura nítida e confortável de tipografias e payloads em IDEs e monitores de alta resolução.
+- **Scroll Horizontal Seguro**: Viewport delimitado com `overflow-x: auto;` e `min-width: 900px;` evita quebras ou cortes de diagramas extensos.
+- **Zero Div Soup**: Estrutura contida estritamente em 1 única div em 1 linha, eliminando aninhamentos e tags `<style>`.
 - **Rigor e Fidelidade Semântica UML**: Diferenciação clara entre chamadas síncronas bloqueantes (`->>`) e mensageria assíncrona fire-and-forget (`--)`).
 - **Segregação Arquitetural Visual**: O uso de `box` nativo delimita instantaneamente fronteiras de infraestrutura e responsabilidade.
-- **Diagramas Claros e Compactos**: Eliminação de espaço horizontal vazio e leitura vertical fluida.
 - **Riqueza Semântica UML**: As caixas de ativação demonstram graficamente quem está retendo tempo de processamento e conexões ativas.
-- **Responsividade Aprimorada**: Sem barras de rolagem artificiais geradas por estilos inline.
 
 ### Trade-offs
 - A adição de `<br/>`, operadores `+`/`-`, agrupamentos `box` e setas assíncronas `--)` exige consistência ao editar novas features para manter a paridade estética e semântica do projeto.

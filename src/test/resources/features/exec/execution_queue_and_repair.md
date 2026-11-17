@@ -14,6 +14,8 @@ Este diagrama documenta a entrada do veículo na fila de oficina, avanço de sta
 
 ---
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -77,3 +79,5 @@ sequenceDiagram
     Exec->>Exec: Valida status atual (COMPLETED/FAILED) -> Dispara DomainException
     Exec-->>-Mecanico: Retorna 400 Bad Request (ProblemDetail: EXECUTION_ALREADY_FINALIZED)
 ```
+
+</div>

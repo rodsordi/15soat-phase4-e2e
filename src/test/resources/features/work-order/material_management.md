@@ -13,6 +13,8 @@ Este diagrama documenta o gerenciamento do estoque e da precificação de insumo
 
 ---
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -50,3 +52,5 @@ sequenceDiagram
     DB-->>-WO: SKU já cadastrado
     WO-->>-Operator: 400 Bad Request (ProblemDetail: RESOURCE_ALREADY_EXISTS)
 ```
+
+</div>

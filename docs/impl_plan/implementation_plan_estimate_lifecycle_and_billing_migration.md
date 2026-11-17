@@ -9,6 +9,8 @@
 
 Este plano detalha a migração da responsabilidade de precificação preliminar, armazenamento do orçamento (*Estimate*), envio de e-mail ao cliente com o detalhamento dos custos e workflow soberano de aprovação/rejeição do cliente para o microsserviço **`api-billing`**, mantendo o desacoplamento de agregados e a coreografia de eventos via Apache Kafka.
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -36,6 +38,8 @@ sequenceDiagram
     WO->>Kafka: Publica WorkOrderApprovedEvent (work-order-events)
     Kafka->>Exec: Consome WorkOrderApprovedEvent (Libera veículo para reparo)
 ```
+
+</div>
 
 ---
 

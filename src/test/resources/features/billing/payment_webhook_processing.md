@@ -9,6 +9,8 @@ Este diagrama documenta o recebimento e reconciliação dos webhooks do Mercado 
 
 ---
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -49,3 +51,5 @@ sequenceDiagram
     Note over Billing: Descarte idempotente:<br/>Fatura mantida em PAID<br/>Sem nova publicação no Kafka
     Billing-->>-MP: Retorna 200 OK { status: "PROCESSED" }
 ```
+
+</div>

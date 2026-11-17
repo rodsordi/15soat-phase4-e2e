@@ -12,6 +12,8 @@ Este diagrama documenta a gestão e padronização dos serviços oferecidos pela
 
 ---
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -42,3 +44,5 @@ sequenceDiagram
     DB-->>-WO: Código já cadastrado
     WO-->>-Admin: 400 Bad Request (ProblemDetail: RESOURCE_ALREADY_EXISTS)
 ```
+
+</div>

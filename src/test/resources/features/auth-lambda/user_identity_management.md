@@ -14,6 +14,8 @@ Este diagrama documenta o provisionamento de identidades e gerenciamento corpora
 
 ---
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -76,3 +78,5 @@ sequenceDiagram
     KC-->>-Lambda: 204 No Content (Usuário excluído do IAM)
     Lambda-->>-Ator: 502 Bad Gateway<br/>(Cadastro revertido para garantir consistência)
 ```
+
+</div>

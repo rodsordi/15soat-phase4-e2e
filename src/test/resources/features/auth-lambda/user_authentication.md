@@ -17,6 +17,8 @@ Este diagrama documenta a arquitetura de autenticação centralizada e emissão 
 
 ---
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -62,3 +64,5 @@ sequenceDiagram
     KC-->>-Lambda: 401 Unauthorized (invalid_grant)
     Lambda-->>-Cliente: 401 Unauthorized (ProblemDetail: INVALID_CREDENTIALS)
 ```
+
+</div>

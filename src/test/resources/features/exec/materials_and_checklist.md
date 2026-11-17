@@ -12,6 +12,8 @@ Este diagrama documenta o lançamento de insumos e preenchimento de checklists o
 
 ---
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -42,3 +44,5 @@ sequenceDiagram
     Mongo-->>-Exec: Retorna documento com materials e checklist
     Exec-->>-Mecanico: Retorna 200 OK (ExecutionDetailedResponse)
 ```
+
+</div>

@@ -9,6 +9,8 @@ Este documento descreve a governança de orçamentos (*Estimates*) centralizada 
 
 ---
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -69,6 +71,8 @@ sequenceDiagram
         deactivate WO
     end
 ```
+
+</div>
 
 ---
 

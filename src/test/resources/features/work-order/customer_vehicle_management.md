@@ -12,6 +12,8 @@ Este diagrama documenta o ciclo completo de onboarding de clientes e gestão de 
 
 ---
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -94,3 +96,5 @@ sequenceDiagram
     DB-->>-WO: Violação de integridade de negócio
     WO-->>-Ator: 422 Unprocessable Entity (ProblemDetail RFC 7807)
 ```
+
+</div>

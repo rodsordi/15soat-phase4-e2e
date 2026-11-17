@@ -21,6 +21,8 @@ O ecossistema adota coreografia assíncrona orientada a eventos para garantir co
 
 ### Cenário 1: Caminho Feliz - Ciclo Completo da Saga com Sucesso
 
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -94,9 +96,13 @@ sequenceDiagram
     OS-->>-Atendente: 200 OK (Status: COMPLETED)
 ```
 
+</div>
+
 ---
 
 ### Cenário 2: Rollback Compensatório por Recusa de Pagamento
+
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
 
 ```mermaid
 sequenceDiagram
@@ -149,9 +155,13 @@ sequenceDiagram
     Note over OS: Rollback garantido sem<br/>inconsistência distribuída!
 ```
 
+</div>
+
 ---
 
 ### Cenário 3: Rollback Compensatório com Estorno Financeiro por Falha na Oficina
+
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
 
 ```mermaid
 sequenceDiagram
@@ -197,9 +207,13 @@ sequenceDiagram
     Note over Cliente,OS: Consistência eventual garantida:<br/>Fatura REFUNDED & OS CANCELED!
 ```
 
+</div>
+
 ---
 
 ### Cenário 4: Idempotência do Estorno Compensatório perante Notificações Repetidas
+
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
 
 ```mermaid
 sequenceDiagram
@@ -230,3 +244,5 @@ sequenceDiagram
     deactivate OS
     Note over MP: Zero estornos duplicados<br/>Zero chamadas espúrias ao gateway!
 ```
+
+</div>
