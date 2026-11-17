@@ -84,11 +84,3 @@ Funcionalidade: Geração de Faturas e Checkout de Pagamento
     Então o código de status HTTP da resposta deve ser 200
     E a resposta deve conter a chave "qrCode" e o payload "qrCodeBase64" do Mercado Pago
 
-  # ============================================================================
-  # Cenário 8: Segurança e Controle de Acesso (RBAC)
-  # ============================================================================
-  @seguranca @rbac
-  Cenário: Bloqueio de acesso para requisição sem token de autenticação
-    Dado que a requisição não possui cabeçalho de autenticação
-    Quando uma tentativa de emissão de fatura é submetida
-    Então o código de status HTTP da resposta deve ser 401

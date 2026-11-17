@@ -8,7 +8,7 @@ O projeto E2E adota documentação viva através de diagramas de sequência Merm
 A implementação inicial apresentava os seguintes desafios visuais:
 1. **Espaçamento Excessivo entre Componentes**:
    - Mensagens com payloads inline muito longos (ex: `POST /api/v1/customers { document: "52998224725", name, email }`) forçavam o motor de renderização do Mermaid a afastar horizontalmente as colunas dos participantes.
-   - O container HTML possuía uma largura mínima fixa (`min-width: 900px`), o que causava vazios visuais desnecessários em diagramas com apenas 4 participantes e forçava barra de rolagem horizontal desnecessária em telas de laptops ou janelas lado a lado (split screen).
+   - O container HTML anterior utilizava aninhamento de múltiplas tags (`<div><div>...</div></div>`) com largura fixa indiscriminada (`min-width: 900px`) sem zoom, o que causava o anti-pattern *Div Soup* e vazios visuais quando aplicado a fluxos curtos, além de forçar barra de rolagem desnecessária em telas de laptops ou janelas lado a lado (split screen).
 2. **Ausência de Indicação de Ciclo de Vida da Thread (Activation Boxes)**:
    - As linhas de vida dos componentes permaneciam tracejadas do início ao fim, sem indicar quando um componente estava ativamente alocando recursos, executando processamento ou aguardando resposta de I/O em banco de dados.
 
@@ -32,42 +32,50 @@ Decidiu-se **padronizar a construção e a renderização dos diagramas de sequ�
      - `Kong-->>-Atendente: Retorno final` (fecha thread no gateway)
    - **Atores Humanos e Broker Kafka sem Threads**: Atores humanos (`Cliente`, `Atendente`, `Mecânico`) e o barramento assíncrono (`Kafka`) não representam processos de execução contínua de software, portanto **nunca** devem receber barras de ativação (`+`/`-`).
 
-3. **Fronteira Delimitada de Sessão Autenticada**:
-   - A nota de sessão autenticada deve delimitar com precisão a borda HTTP entre os atores chamadores e o Gateway:
-     - `Note over <Atores>,Kong: 🔒 Sessão Autenticada: Requisições utilizam Bearer JWT (Role: ...)`
+3. **Fronteira Delimitada de Sessão Autenticada e Borda Segura**:
+   - A nota de sessão perimetral deve delimitar com precisão a borda HTTP entre os atores chamadores e os microsserviços privados, referenciando explicitamente a obtenção de tokens via Keycloak e a autorização perimetral:
+     - `Note over <Atores>,<Serviço>: 🔒 Borda Autenticada via Bearer JWT (vide user_authentication.md):<br/>Requisições utilizam token OIDC emitido pelo Keycloak (Role: ...)`
    - Deixar explícito que filas internas (Kafka) e bancos de dados não pertencem à sessão Bearer JWT.
+   - Complementar no texto Markdown (fora do SVG) com um callout `[!NOTE]` contendo o link hipertexto navegável para `user_authentication.md` (emissão de credenciais).
 
-4. **Anulação de Compressão de SVG e Garantia de Rolagem Horizontal (IntelliJ IDEA & Browsers)**:
-   - Para impedir que IDEs (como IntelliJ IDEA / JCEF) ou visualizadores Markdown forcem `max-width: 100%` no SVG e reduzam as fontes a tamanhos ilegíveis, todo diagrama deve ser envolvido pelo seguinte padrão CSS:
-     ```html
-     <div style="overflow-x: auto; width: 100%;">
-     <style>
-       .mermaid svg {
-         max-width: none !important;
-         min-width: [LARGURA]px !important;
-         width: [LARGURA]px !important;
-       }
-     </style>
+4. **Padronização de Viewport com 1 Div Simples em Linha Única, Zoom 1.5 e Rolagem Horizontal**:
+   - Todo diagrama Mermaid de médio ou grande porte (diagramas de sequência de ponta a ponta, diagramas ERD relacionais ou arquiteturas de múltiplos serviços) deve ser encapsulado obrigatoriamente por **exatamente uma única tag `<div>`**, declarada em **uma única linha**, garantindo rolagem horizontal (`overflow-x: auto;`), dimensionamento com largura mínima (`min-width: 900px;`) e fator de ampliação visual de 150% (`zoom: 1.5;`):
+````markdown
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
 
-     ```mermaid
-     sequenceDiagram
-     ...
-     ```
-     </div>
-     ```
-   - **Matriz de Dimensionamento por Quantidade de Participantes**:
-     - **3 a 4 participantes**: `1100px` (ex: `auth_token_authorizer.md`, `material_management.md`).
-     - **5 participantes**: `1300px` (ex: `employee_identity_management.md`, `execution_queue_and_repair.md`).
-     - **6 participantes**: `1550px` (ex: `customer_vehicle_management.md`, `compensating_saga_rollback.md`).
-     - **7 participantes**: `1750px` (ex: `complete_choreographed_saga.md`).
-     - **8 ou mais participantes / Sagas distribuídas com gateways externos**: `2000px` (ex: `work_order_lifecycle.md`).
+```mermaid
+...
+```
+
+</div>
+````
+   - **Regras Estritas de Higiene**:
+     - **Linha Única**: A tag de abertura `<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">` deve constar inteira em uma única linha, sem quebras dentro da tag.
+     - **Sem Divs Aninhadas ("Div Soup")**: É terminantemente proibido aninhar múltiplos contêineres (`<div><div>...</div></div>`).
+     - **Sem Tags `<style>` Globais**: Proibido injetar blocos `<style>` com regras globais (`.mermaid svg { ... }`).
+   - **Exceção para Diagramas Pequenos**: Diagramas pequenos (poucos nós, fluxo linear simples de 2 a 3 participantes ou estados curtos) **não devem** utilizar a div, permanecendo em sintaxe pura *Pure Mermaid* para evitar barras de rolagem artificiais em diagramas concisos.
+   - **Legibilidade e Anti-Compressão Complementares**: A legibilidade visual interna dos diagramas complementa o zoom através de modelagem limpa do Mermaid:
+     - Quebras de linha com `<br/>` em mensagens e payloads (mantendo as lifelines próximas horizontalmente).
+     - Empilhamento de rótulos dos participantes (`Nome<br/>(Papel)`).
+     - Numeração automática com `autonumber`.
+
+5. **Abstração Direta (Sem Gateway como Participante Pass-Through)**:
+   - O participante intermediário de borda (Kong Gateway / API Gateway) é omitido como coluna repetitiva nos diagramas de domínio e coreografia, sendo declarado na nota inicial de borda segura com referência canônica: `🔒 Borda Autenticada via Bearer JWT (vide user_authentication.md): Requisições utilizam token OIDC`.
+   - Isso elimina setas redundantes de proxy (`Ator -> Kong -> Microsserviço`) e reduz a largura total do diagrama, permitindo excelente legibilidade em IDEs (IntelliJ IDEA) e no GitHub.
+
+6. **Semântica UML Assíncrona (`--)`) e Agrupamentos por `box`**:
+   - **Mensageria Orientada a Eventos (`--)`)**: Toda publicação ou consumo assíncrono via Apache Kafka (ou SQS/SNS) deve utilizar a seta pontilhada assíncrona do Mermaid (`--)`), reservando setas sólidas síncronas (`->>`) e retornos síncronos (`-->>`) estritamente para chamadas RPC/HTTP/REST e retornos diretos.
+   - **Agrupamentos Arquiteturais Nativos (`box`)**: Utilização de contêineres nativos `box <cor> <Título> ... end` para agrupar visualmente participantes por camada arquitetural (ex: *Atores de Negócio*, *Cluster Amazon EKS*, *Mensageria Gerenciada*, *Gateway Externo*), sem recorrer a tags HTML ou divs.
 
 ## Consequências
 
 ### Positivas
-- **Diagramas Claros e Compactos**: Eliminação de espaço horizontal vazio e leitura vertical fluida.
+- **Legibilidade Ampliada & Zoom Confortável**: Fator de escala de 150% (`zoom: 1.5;`) garante leitura nítida e confortável de tipografias e payloads em IDEs e monitores de alta resolução.
+- **Scroll Horizontal Seguro**: Viewport delimitado com `overflow-x: auto;` e `min-width: 900px;` evita quebras ou cortes de diagramas extensos.
+- **Zero Div Soup**: Estrutura contida estritamente em 1 única div em 1 linha, eliminando aninhamentos e tags `<style>`.
+- **Rigor e Fidelidade Semântica UML**: Diferenciação clara entre chamadas síncronas bloqueantes (`->>`) e mensageria assíncrona fire-and-forget (`--)`).
+- **Segregação Arquitetural Visual**: O uso de `box` nativo delimita instantaneamente fronteiras de infraestrutura e responsabilidade.
 - **Riqueza Semântica UML**: As caixas de ativação demonstram graficamente quem está retendo tempo de processamento e conexões ativas.
-- **Responsividade Aprimorada**: Redução para `700px` nos diagramas menores evita barras de rolagem desnecessárias no GitHub e em ferramentas de documentação.
 
 ### Trade-offs
-- A adição de `<br/>` e operadores `+`/`-` exige atenção ao editar novas setas no Mermaid para manter a paridade de abertura e fechamento de blocos de ativação.
+- A adição de `<br/>`, operadores `+`/`-`, agrupamentos `box` e setas assíncronas `--)` exige consistência ao editar novas features para manter a paridade estética e semântica do projeto.

@@ -4,44 +4,52 @@
 
 Este diagrama documenta o recebimento e reconciliação dos webhooks do Mercado Pago, em total conformidade com a especificação **OpenAPI 3.0** (`openapi.yaml` e `mercadopago-api.yaml`) e a **ADR 0001 (Processamento Idempotente de Webhooks)**. Cobre o fluxo de aprovação e o fluxo de recusa com verificação ativa (*pull verification*) e publicação de eventos transacionais na Saga coreografada via Apache Kafka.
 
-<div style="overflow-x: auto; width: 100%;">
-<style>
-  .mermaid svg {
-    max-width: none !important;
-    min-width: 1100px !important;
-    width: 1100px !important;
-  }
-</style>
+> [!NOTE]
+> **🔒 Ingress de Pagamentos**: As notificações assíncronas do Mercado Pago são recebidas através da rota pública de webhook, sendo processadas com verificação ativa de status e idempotência estrita.
+
+---
+
+<div style="overflow-x: auto; zoom: 1.5; min-width: 900px;">
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant MP as Mercado Pago<br/>Gateway
-    participant Kong as Kong<br/>API Gateway
-    participant Billing as API Billing<br/>(Spring Boot 4 / PG)
-    participant Kafka as Apache Kafka<br/>Broker
+    box rgba(249, 115, 22, 0.08) Gateway Externo
+        participant MP as Mercado Pago<br/>Gateway
+    end
+    box rgba(59, 130, 246, 0.08) Cluster Amazon EKS (Microsserviços)
+        participant Billing as API Billing<br/>(Spring Boot 4 / PG)
+    end
+    box rgba(34, 197, 94, 0.08) Mensageria Gerenciada
+        participant Kafka as Apache Kafka<br/>Broker
+    end
+
+    Note over MP,Billing: 🔒 Ingress de Notificação de Pagamento:<br/>Webhook do Mercado Pago recebido e validado com idempotência
 
     %% Pagamento Aprovado
     Note over MP,Kafka: 1. Processamento de Webhook Aprovado (Conforme OpenAPI & ADR 0001)
-    MP->>Kong: POST /api/v1/payments/mercadopago/webhook<br/>{ action: "payment.updated", data: { id: "ORD-9988" } }
-    Kong->>Billing: Proxy Webhook Request
-    Billing->>MP: GET /v1/orders/{order_id} (Reconciliação e Verificação Ativa)
-    MP-->>Billing: Retorna dados da ordem (status: "approved")
-    Billing->>Billing: Atualiza fatura para PAID (Controle Otimista @Version)
-    Billing->>Kafka: Publica PaymentConfirmedEvent (Tópico: payment-events)
-    Billing-->>Kong: Retorna 200 OK { status: "PROCESSED" }
-    Kong-->>MP: Retorna 200 OK
+    MP->>+Billing: POST /api/v1/payments/mercadopago/webhook<br/>{ action: "payment.updated",<br/>  data: { id: "ORD-9988" } }
+    Billing->>+MP: GET /v1/orders/{order_id}<br/>(Reconciliação e Verificação Ativa)
+    MP-->>-Billing: Retorna dados da ordem (status: "approved")
+    Billing->>Billing: Atualiza fatura para PAID<br/>(Controle Otimista @Version)
+    Billing--)Kafka: Publica PaymentConfirmedEvent<br/>(Tópico: payment-events)
+    Billing-->>-MP: Retorna 200 OK { status: "PROCESSED" }
 
     %% Pagamento Recusado
     Note over MP,Kafka: 2. Processamento de Webhook Recusado (Conforme OpenAPI & ADR 0001)
-    MP->>Kong: POST /api/v1/payments/mercadopago/webhook<br/>{ action: "payment.updated", data: { id: "ORD-9988" } }
-    Kong->>Billing: Proxy Webhook Request
-    Billing->>MP: GET /v1/orders/{order_id} (Reconciliação e Verificação Ativa)
-    MP-->>Billing: Retorna dados da ordem (status: "rejected")
-    Billing->>Billing: Atualiza fatura para FAILED (Controle Otimista @Version)
-    Billing->>Kafka: Publica PaymentFailedEvent (Tópico: payment-events)
-    Billing-->>Kong: Retorna 200 OK { status: "PROCESSED" }
-    Kong-->>MP: Retorna 200 OK
+    MP->>+Billing: POST /api/v1/payments/mercadopago/webhook<br/>{ action: "payment.updated",<br/>  data: { id: "ORD-9988" } }
+    Billing->>+MP: GET /v1/orders/{order_id}<br/>(Reconciliação e Verificação Ativa)
+    MP-->>-Billing: Retorna dados da ordem (status: "rejected")
+    Billing->>Billing: Atualiza fatura para FAILED<br/>(Controle Otimista @Version)
+    Billing--)Kafka: Publica PaymentFailedEvent<br/>(Tópico: payment-events)
+    Billing-->>-MP: Retorna 200 OK { status: "PROCESSED" }
+
+    %% Retransmissão / Idempotência
+    Note over MP,Kafka: 3. Retransmissão de Webhook Repetido e Idempotência Estrita (Cenário 3 / ADR 0001)
+    MP->>+Billing: POST /api/v1/payments/mercadopago/webhook<br/>{ action: "payment.updated",<br/>  data: { id: "ORD-9988" } }
+    Billing->>Billing: Localiza fatura já liquidada (Status: PAID)<br/>Identifica processamento prévio
+    Note over Billing: Descarte idempotente:<br/>Fatura mantida em PAID<br/>Sem nova publicação no Kafka
+    Billing-->>-MP: Retorna 200 OK { status: "PROCESSED" }
 ```
 
 </div>

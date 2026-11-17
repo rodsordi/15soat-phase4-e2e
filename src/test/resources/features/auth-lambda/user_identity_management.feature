@@ -1,9 +1,9 @@
 # language: pt
-@e2e @auth @lambda @funcionario @iam
-Funcionalidade: Gestão de Identidade e Autenticação de Funcionários via Serverless & Keycloak
-  Como administrador da oficina mecânica
-  Quero cadastrar e autenticar funcionários da oficina
-  Para conceder acesso seguro e controlado às operações de atendimento e gestão
+@e2e @auth @lambda @usuario @iam
+Funcionalidade: Gestão e Provisionamento de Identidades de Usuários via Serverless & Keycloak
+  Como operador ou cliente da oficina mecânica
+  Quero gerenciar identidades e provisionar usuários no IAM e no catálogo
+  Para conceder acesso seguro e controlado às operações da plataforma
 
   # ============================================================================
   # Contexto: Disponibilidade da Infraestrutura de Autenticação e IAM
@@ -45,28 +45,34 @@ Funcionalidade: Gestão de Identidade e Autenticação de Funcionários via Serv
       | detail    | CPF com formato inválido ou dígitos verificadores incorretos |
 
   # ============================================================================
-  # Cenário 3: Autenticação de Funcionário e Emissão de Token JWT
+  # Cenário 3: Atendente Cadastra Cliente na Recepção (Saga Orquestrada)
   # ============================================================================
-  @login-funcionario
-  Cenário: Funcionário realiza login e recebe token JWT com perfil EMPLOYEE
-    Dado um funcionário cadastrado com documento "86266070087" e senha "StrongP@ss2026"
-    Quando o funcionário realiza a autenticação com as credenciais:
-      | username | 86266070087    |
-      | password | StrongP@ss2026 |
-    Então a autenticação deve ser realizada com sucesso com código HTTP 200
-    E o token JWT emitido deve conter a claim de papéis com "EMPLOYEE"
+  @cadastro-cliente-saga
+  Cenário: Atendente cadastra novo cliente via saga orquestrada com sucesso
+    Dado um atendente autenticado no sistema com perfil "EMPLOYEE"
+    Quando o atendente cadastra um novo cliente com os seguintes dados:
+      | name     | Rodrigo Cliente      |
+      | email    | rodrigo@fiap.com.br  |
+      | document | 52998224725          |
+      | role     | CUSTOMER             |
+      | password | CustomerPass123!     |
+    Então o cliente deve ser provisionado com sucesso na Saga Orquestrada
+    E a resposta deve confirmar a criação com status 201 e papel "CUSTOMER"
 
   # ============================================================================
-  # Cenário 4: Falha de Autenticação com Senha Incorreta
+  # Cenário 4: Falha na API Work Order Dispara Rollback Compensatório no Keycloak
   # ============================================================================
-  @login-funcionario-falha
-  Cenário: Tentativa de login com senha incorreta é negada
-    Dado um funcionário cadastrado com documento "86266070087"
-    Quando o funcionário tenta realizar autenticação com senha inválida:
-      | username | 86266070087    |
-      | password | SenhaErrada123 |
+  @cadastro-cliente-rollback
+  Cenário: Falha de persistência no catálogo aciona rollback compensatório da saga
+    Dado um atendente autenticado no sistema com perfil "EMPLOYEE"
+    Quando o atendente tenta cadastrar um cliente que causa falha no catálogo:
+      | name     | Rodrigo Falha        |
+      | email    | falha@garage.com.br  |
+      | document | 52998224725          |
+      | role     | CUSTOMER             |
+      | password | CustomerPass123!     |
     Então o erro retornado deve corresponder a:
-      | status    | 401                                       |
-      | errorCode | INVALID_CREDENTIALS                       |
-      | title     | Invalid Credentials                       |
-      | detail    | Usuário ou senha inválidos para o domínio |
+      | status    | 502                                                         |
+      | errorCode | REGISTRATION_ROLLBACK                                       |
+      | title     | Registration Rollback                                       |
+      | detail    | Falha na sincronização cadastral compensada no Keycloak     |

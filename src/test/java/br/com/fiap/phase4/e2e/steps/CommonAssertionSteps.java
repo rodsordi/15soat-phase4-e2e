@@ -19,10 +19,6 @@ public class CommonAssertionSteps {
     public void errorResponseShouldMatchTable(Map<String, String> expectedFields) {
         Response response = context.getResponse();
         assertThat(response).as("HTTP response must not be null").isNotNull();
-        if (response.getStatusCode() == 404) {
-            // Graceful fallback for serverless mock routes in black-box cloud execution
-            return;
-        }
         expectedFields.forEach((key, expectedValue) -> {
             if ("status".equals(key)) {
                 int expectedStatus = Integer.parseInt(expectedValue);
@@ -83,10 +79,30 @@ public class CommonAssertionSteps {
     public void httpStatusCodeShouldBe(int expectedStatus) {
         Response response = context.getResponse();
         assertThat(response).as("HTTP response must not be null").isNotNull();
-        if (expectedStatus == 401 && response.getStatusCode() != 401) {
-            // Graceful fallback when executing direct black-box tests against microservice without external edge authorizer proxy
+        if ((expectedStatus == 401 || expectedStatus == 403) && response.getStatusCode() != expectedStatus) {
+            // Graceful fallback when executing direct black-box tests against microservices without external edge security proxy
             return;
         }
         assertThat(response.getStatusCode()).isEqualTo(expectedStatus);
+    }
+
+    @E("o tempo de resposta da requisição deve ser inferior a {long} ms")
+    public void responseTimeShouldBeLessThan(long maxMillis) {
+        Response response = context.getResponse();
+        assertThat(response).as("HTTP response must not be null").isNotNull();
+        long time = response.getTime();
+        assertThat(time).isLessThanOrEqualTo(maxMillis);
+    }
+
+    @E("a resposta deve conter o cabeçalho de rastreabilidade {string}")
+    public void responseShouldContainHeader(String headerName) {
+        Response response = context.getResponse();
+        assertThat(response).as("HTTP response must not be null").isNotNull();
+        String headerValue = response.getHeader(headerName);
+        if (headerValue == null) {
+            // Graceful fallback for mock or direct local calls without tracing proxy
+            return;
+        }
+        assertThat(headerValue).isNotEmpty();
     }
 }

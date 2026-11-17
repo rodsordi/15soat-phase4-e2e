@@ -73,7 +73,21 @@ public class ExecutionSteps {
         context.setTechnicianId(technicianId);
         String workOrderId = context.getWorkOrderId();
         if (workOrderId == null) {
-            workOrderId = UUID.randomUUID().toString();
+            Response woResp = context.givenAuth()
+                    .body(Map.of(
+                            "customerDocument", "52998224725",
+                            "licensePlate", "BRA2E19",
+                            "description", "Work order for execution testing"
+                    ))
+                    .post("/api/v1/work-orders");
+            if (woResp != null && woResp.getStatusCode() == 201) {
+                workOrderId = woResp.jsonPath().getString("id");
+                context.givenAuth().body(Map.of("status", "DIAGNOSING")).patch("/api/v1/work-orders/" + workOrderId);
+                context.givenAuth().body(Map.of("status", "WAITING_APPROVAL")).patch("/api/v1/work-orders/" + workOrderId);
+                context.givenAuth().body(Map.of("status", "APPROVED")).patch("/api/v1/work-orders/" + workOrderId);
+            } else {
+                workOrderId = UUID.randomUUID().toString();
+            }
             context.setWorkOrderId(workOrderId);
         }
         String payload = """

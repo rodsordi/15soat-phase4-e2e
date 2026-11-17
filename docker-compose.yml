@@ -1,0 +1,59 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.5
+    container_name: phase4-keycloak
+    command: ["start-dev", "--import-realm"]
+    ports:
+      - "8085:8080"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/garage_db?currentSchema=keycloak
+      KC_DB_SCHEMA: keycloak
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: postgres
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak/garage-realm.json:/opt/keycloak/data/import/garage-realm.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - garage-net
+
+  postgres:
+    profiles:
+      - standalone
+    image: postgres:16-alpine
+    container_name: phase4-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: garage_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - phase4_postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-schemas.sql:/docker-entrypoint-initdb.d/init-schemas.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d garage_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      garage-net:
+        aliases:
+          - postgres
+          - phase4-postgres
+
+volumes:
+  phase4_postgres_data:
+    name: phase4_postgres_data
+    external: true
+
+networks:
+  garage-net:
+    name: phase4_garage-net
+    external: true
