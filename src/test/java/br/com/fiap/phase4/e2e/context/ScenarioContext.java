@@ -76,7 +76,7 @@ public class ScenarioContext {
             spec.header("Authorization", currentAuthToken);
         }
         String host = EnvironmentConfig.getGatewayHost();
-        if (host != null && !host.isBlank()) {
+        if (host != null && !host.isBlank() && !baseUrl.contains("execute-api")) {
             spec.header("Host", host);
         }
         return spec;

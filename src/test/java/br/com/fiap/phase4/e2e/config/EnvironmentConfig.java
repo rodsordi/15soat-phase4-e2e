@@ -114,10 +114,9 @@ public final class EnvironmentConfig {
     }
 
     public static String getAuthLambdaBaseUrl() {
-        if (isPrdEnvironment()) {
-            return getGatewayUrl();
-        }
-        return getProperty("auth.lambda.url", "http://localhost:8080");
+        return getProperty("auth.lambda.url", isPrdEnvironment()
+                ? "https://6e6fze5u46.execute-api.us-east-2.amazonaws.com"
+                : "http://localhost:8080");
     }
 
     public static String getKeycloakUrl() {

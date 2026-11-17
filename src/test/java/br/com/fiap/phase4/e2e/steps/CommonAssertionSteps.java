@@ -19,10 +19,6 @@ public class CommonAssertionSteps {
     public void errorResponseShouldMatchTable(Map<String, String> expectedFields) {
         Response response = context.getResponse();
         assertThat(response).as("HTTP response must not be null").isNotNull();
-        if (response.getStatusCode() == 404) {
-            // Graceful fallback for serverless mock routes in black-box cloud execution
-            return;
-        }
         expectedFields.forEach((key, expectedValue) -> {
             if ("status".equals(key)) {
                 int expectedStatus = Integer.parseInt(expectedValue);

@@ -62,7 +62,7 @@ class EnvironmentConfigTest {
             assertThat(EnvironmentConfig.getWorkOrderBaseUrl()).isEqualTo(gatewayUrl);
             assertThat(EnvironmentConfig.getBillingBaseUrl()).isEqualTo(gatewayUrl);
             assertThat(EnvironmentConfig.getExecBaseUrl()).isEqualTo(gatewayUrl);
-            assertThat(EnvironmentConfig.getAuthLambdaBaseUrl()).isEqualTo(gatewayUrl);
+            assertThat(EnvironmentConfig.getAuthLambdaBaseUrl()).isEqualTo(EnvironmentConfig.getProperty("auth.lambda.url", "https://6e6fze5u46.execute-api.us-east-2.amazonaws.com"));
             assertThat(EnvironmentConfig.getGatewayHost()).isEqualTo("api.garage.fiap.com.br");
         }
 

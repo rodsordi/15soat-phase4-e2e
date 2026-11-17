@@ -42,12 +42,45 @@ public class AuthLambdaSteps {
 
     @Dado("um administrador autenticado no sistema")
     public void authenticatedAdmin() {
+        if (!EnvironmentConfig.isLocalEnvironment()) {
+            String adminToken = loginAndGetToken("admin_user", "AdminPassword123!");
+            if (adminToken != null) {
+                context.setAdminToken("Bearer " + adminToken);
+                return;
+            }
+        }
         context.setAdminToken(EnvironmentConfig.getAdminAuthToken());
     }
 
     @Dado("um atendente autenticado no sistema com perfil {string}")
     public void authenticatedAttendant(String role) {
-        context.setCurrentAuthToken("Bearer attendant_valid_token");
+        if (!EnvironmentConfig.isLocalEnvironment()) {
+            String employeeToken = loginAndGetToken("86266070087", "StrongP@ss2026");
+            if (employeeToken != null) {
+                context.setCurrentAuthToken("Bearer " + employeeToken);
+                return;
+            }
+        }
+        context.setCurrentAuthToken(EnvironmentConfig.getDefaultAuthToken());
+    }
+
+    private String loginAndGetToken(String username, String password) {
+        try {
+            Response response = context.givenAuthLambda()
+                    .body("""
+                            {
+                              "username": "%s",
+                              "password": "%s"
+                            }
+                            """.formatted(username, password))
+                    .post("/auth/login");
+            if (response.getStatusCode() == 200) {
+                return response.jsonPath().getString("access_token");
+            }
+        } catch (Exception e) {
+            System.err.println("[WARN] Failed to dynamically obtain token for " + username + ": " + e.getMessage());
+        }
+        return null;
     }
 
     @Quando("o atendente cadastra um novo cliente com os seguintes dados:")
@@ -60,7 +93,7 @@ public class AuthLambdaSteps {
     public void customerProvisionedSuccessfully() {
         Response response = context.getResponse();
         assertThat(response).as("Customer provisioning response must not be null").isNotNull();
-        assertThat(response.getStatusCode()).isIn(200, 201, 400, 404);
+        assertThat(response.getStatusCode()).isEqualTo(201);
     }
 
     @Quando("o administrador cadastra um novo funcionário com os seguintes dados:")
@@ -73,53 +106,51 @@ public class AuthLambdaSteps {
     private void registerUserOrSaga(Map<String, String> data, String targetRole) {
         String document = data.get("document");
 
-        // 1. Invalid Document scenario validation
-        if ("11111111111".equals(document) || (document != null && document.length() != 11)) {
-            Response response = new ResponseBuilder()
-                    .setStatusCode(400)
-                    .setContentType(ContentType.JSON)
-                    .setHeader("X-Synthetic-Response", "true")
-                    .setBody("""
-                            {
-                              "status": 400,
-                              "errorCode": "INVALID_DOCUMENT",
-                              "title": "Invalid Document",
-                              "detail": "CPF com formato inválido ou dígitos verificadores incorretos"
-                            }
-                            """)
-                    .build();
-            context.setResponse(response);
-            return;
-        }
+        if (EnvironmentConfig.isLocalEnvironment()) {
+            // 1. Invalid Document scenario validation (Local)
+            if ("11111111111".equals(document) || (document != null && document.length() != 11)) {
+                Response response = new ResponseBuilder()
+                        .setStatusCode(400)
+                        .setContentType(ContentType.JSON)
+                        .setHeader("X-Synthetic-Response", "true")
+                        .setBody("""
+                                {
+                                  "status": 400,
+                                  "errorCode": "INVALID_DOCUMENT",
+                                  "title": "Invalid Document",
+                                  "detail": "CPF com formato inválido ou dígitos verificadores incorretos"
+                                }
+                                """)
+                        .build();
+                context.setResponse(response);
+                return;
+            }
 
-        // 2. Compensating Saga Rollback scenario: create then delete in Keycloak
-        if ("Rodrigo Falha".equals(data.get("name"))) {
-            if (EnvironmentConfig.isLocalEnvironment()) {
+            // 2. Compensating Saga Rollback scenario (Local)
+            if ("Rodrigo Falha".equals(data.get("name"))) {
                 String adminToken = obtainKeycloakAdminToken();
                 deleteUserIfExists(adminToken, document);
                 createUserInKeycloak(adminToken, data, targetRole);
                 deleteUserIfExists(adminToken, document);
+
+                Response rollbackResponse = new ResponseBuilder()
+                        .setStatusCode(502)
+                        .setContentType(ContentType.JSON)
+                        .setHeader("X-Synthetic-Response", "true")
+                        .setBody("""
+                                {
+                                  "status": 502,
+                                  "errorCode": "REGISTRATION_ROLLBACK",
+                                  "title": "Registration Rollback",
+                                  "detail": "Falha na sincronização cadastral compensada no Keycloak"
+                                }
+                                """)
+                        .build();
+                context.setResponse(rollbackResponse);
+                return;
             }
 
-            Response rollbackResponse = new ResponseBuilder()
-                    .setStatusCode(502)
-                    .setContentType(ContentType.JSON)
-                    .setHeader("X-Synthetic-Response", "true")
-                    .setBody("""
-                            {
-                              "status": 502,
-                              "errorCode": "REGISTRATION_ROLLBACK",
-                              "title": "Registration Rollback",
-                              "detail": "Falha na sincronização cadastral compensada no Keycloak"
-                            }
-                            """)
-                    .build();
-            context.setResponse(rollbackResponse);
-            return;
-        }
-
-        // 3. Normal registration against Keycloak
-        if (EnvironmentConfig.isLocalEnvironment()) {
+            // 3. Normal registration against Keycloak (Local)
             String adminToken = obtainKeycloakAdminToken();
             deleteUserIfExists(adminToken, document);
             Response creationResp = createUserInKeycloak(adminToken, data, targetRole);
@@ -149,7 +180,7 @@ public class AuthLambdaSteps {
             return;
         }
 
-        // PRD Profile
+        // PRD Profile - Dispatches real HTTP call to Serverless Auth Lambda
         String payload = """
                 {
                   "name": "%s",
@@ -166,10 +197,14 @@ public class AuthLambdaSteps {
                 data.get("password")
         );
 
+        String previousAuth = context.getCurrentAuthToken();
+        if ("EMPLOYEE".equalsIgnoreCase(targetRole)) {
+            context.setCurrentAuthToken(context.getAdminToken());
+        }
         Response response = context.givenAuthLambda()
-                .header("Authorization", context.getAdminToken())
                 .body(payload)
                 .post("/users");
+        context.setCurrentAuthToken(previousAuth);
         context.setResponse(response);
     }
 
@@ -254,7 +289,7 @@ public class AuthLambdaSteps {
     public void employeeProvisionedSuccessfully() {
         Response response = context.getResponse();
         assertThat(response).as("Employee provisioning response must not be null").isNotNull();
-        assertThat(response.getStatusCode()).isIn(200, 201, 400, 404);
+        assertThat(response.getStatusCode()).isEqualTo(201);
     }
 
     @E("a resposta deve confirmar a criação com status {int} e papel {string}")
@@ -336,13 +371,19 @@ public class AuthLambdaSteps {
                 .body(payload)
                 .post("/auth/login");
         context.setResponse(response);
+        if (response.getStatusCode() == 200) {
+            String token = response.jsonPath().getString("access_token");
+            if (token != null) {
+                context.setCurrentAuthToken("Bearer " + token);
+            }
+        }
     }
 
     @Entao("a autenticação deve ser realizada com sucesso com código HTTP {int}")
     public void authSucceedsWithStatus(int expectedStatus) {
         Response response = context.getResponse();
         assertThat(response).as("Auth response must not be null").isNotNull();
-        assertThat(response.getStatusCode()).isIn(expectedStatus, 200, 400, 404);
+        assertThat(response.getStatusCode()).isEqualTo(expectedStatus);
     }
 
     @E("o token JWT emitido deve conter a claim de papéis com {string}")
@@ -351,9 +392,12 @@ public class AuthLambdaSteps {
         assertThat(response).as("Auth response must not be null").isNotNull();
         if (response.getStatusCode() == 200) {
             String accessToken = response.jsonPath().getString("access_token");
-            if (accessToken != null) {
-                assertThat(accessToken).isNotBlank();
-            }
+            assertThat(accessToken).isNotBlank();
+
+            String[] parts = accessToken.split("\\.");
+            assertThat(parts.length).isGreaterThanOrEqualTo(2);
+            String payloadJson = new String(java.util.Base64.getUrlDecoder().decode(parts[1]), java.nio.charset.StandardCharsets.UTF_8);
+            assertThat(payloadJson).contains(expectedRole);
         }
     }
 }
