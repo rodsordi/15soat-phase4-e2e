@@ -1,5 +1,6 @@
 package br.com.fiap.phase4.e2e.steps;
 
+import br.com.fiap.phase4.e2e.auth.AuthTokenService;
 import br.com.fiap.phase4.e2e.config.EnvironmentConfig;
 import br.com.fiap.phase4.e2e.context.ScenarioContext;
 import io.cucumber.java.pt.Dado;
@@ -44,7 +45,7 @@ public class WorkOrderSteps {
     @Dado("que o operador de estoque está devidamente autenticado com perfil {string}")
     @Dado("que o administrador da oficina está devidamente autenticado com perfil {string}")
     public void attendantIsAuthenticatedWithRole(String role) {
-        context.setCurrentAuthToken("Bearer valid_" + role.toLowerCase() + "_token");
+        context.setCurrentAuthToken(AuthTokenService.getTokenForRole(role));
     }
 
     @Dado("que o operador não possui token de autenticação válido")

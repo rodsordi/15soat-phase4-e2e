@@ -67,7 +67,8 @@ C4Container
     }
 
     Container_Boundary(b_edge, "2. Camada de Borda & Serverless (iac-lambda)") {
-        Container(apigw, "AWS HTTP API Gateway v2", "AWS API Gateway", "Ponto de entrada público para rotas<br/>serverless e recepção de webhooks.")
+        Container(apigw, "AWS HTTP API Gateway v2", "AWS API Gateway", "Ponto de entrada público para rotas<br/>serverless, autenticação e webhooks.")
+        Container(lambda_auth, "Lambda Auth Service", "Node.js 20 / Lambda", "Autenticação de usuários, emissão de<br/>tokens JWT RS256 e endpoint JWKS.")
         Container(webhook, "Lambda Mercado Pago Webhook", "Node.js 20 / Lambda", "Recepção e validação de callbacks<br/>de notificação de pagamento Pix.")
         Container(nlb, "AWS Network Load Balancer (NLB)", "AWS NLB", "Entrada de rede de alta performance (L4)<br/>para o cluster EKS.")
     }
@@ -93,11 +94,17 @@ C4Container
         System_Ext(mercadopago, "Mercado Pago", "Gateway externo de pagamentos Pix<br/>e envio de notificações via Webhook.")
     }
 
-    Rel_Down(customer, nlb, "Consulta OS e aprova orçamentos", "HTTPS / JSON")
-    Rel_Down(mechanic, nlb, "Gerencia ordens de serviço<br/>e manutenções", "HTTPS / JSON")
+    Rel_Down(customer, apigw, "Autentica-se e obtém token JWT", "HTTPS / POST /auth/login")
+    Rel_Down(mechanic, apigw, "Autentica-se e obtém token JWT", "HTTPS / POST /auth/login")
 
+    Rel_Right(apigw, lambda_auth, "Roteia autenticação<br/>e consulta JWKS", "AWS Lambda Invoke")
     Rel_Right(apigw, webhook, "Roteia payloads de<br/>notificação Pix", "AWS Lambda Invoke")
     Rel_Right(webhook, nlb, "Encaminha notificação<br/>confirmada", "HTTPS / JSON")
+
+    Rel_Down(customer, nlb, "Consulta OS e aprova orçamentos (Bearer JWT)", "HTTPS / JSON")
+    Rel_Down(mechanic, nlb, "Gerencia ordens de serviço<br/>e manutenções (Bearer JWT)", "HTTPS / JSON")
+
+    Rel_Up(kong, apigw, "Valida assinatura JWT via JWKS pública", "HTTPS / GET /.well-known/jwks.json")
 
     Rel_Down(nlb, kong, "Encaminha tráfego balanceado L4/L7", "TCP / 80/443")
     Rel_Down(kong, api_wo, "Roteia /api/v1/work-orders", "HTTP / REST")

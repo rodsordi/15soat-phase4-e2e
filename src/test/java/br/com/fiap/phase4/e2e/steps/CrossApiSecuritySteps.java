@@ -1,5 +1,6 @@
 package br.com.fiap.phase4.e2e.steps;
 
+import br.com.fiap.phase4.e2e.auth.AuthTokenService;
 import br.com.fiap.phase4.e2e.config.EnvironmentConfig;
 import br.com.fiap.phase4.e2e.context.ScenarioContext;
 import io.cucumber.java.pt.Dado;
@@ -24,7 +25,7 @@ public class CrossApiSecuritySteps {
     @Dado("que o usuário está autenticado com perfil {string}")
     @Dado("que a requisição é autenticada com perfil {string}")
     public void configureAuthProfile(String role) {
-        context.setCurrentAuthToken("Bearer valid_" + role.toLowerCase() + "_token");
+        context.setCurrentAuthToken(AuthTokenService.getTokenForRole(role));
     }
 
     @Quando("uma requisição {string} for enviada para a API {string} no endpoint {string}")

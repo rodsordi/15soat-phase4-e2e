@@ -1,5 +1,6 @@
 package br.com.fiap.phase4.e2e.steps;
 
+import br.com.fiap.phase4.e2e.auth.AuthTokenService;
 import br.com.fiap.phase4.e2e.config.EnvironmentConfig;
 import br.com.fiap.phase4.e2e.context.ScenarioContext;
 import io.cucumber.java.pt.Dado;
@@ -29,7 +30,7 @@ public class BillingSteps {
 
     @Dado("que o analista de faturamento está devidamente autenticado com perfil {string}")
     public void billingAnalystIsAuthenticated(String role) {
-        context.setCurrentAuthToken("Bearer valid_" + role.toLowerCase() + "_token");
+        context.setCurrentAuthToken(AuthTokenService.getTokenForRole(role));
     }
 
     @Dado("uma fatura gerada com status {string}")
