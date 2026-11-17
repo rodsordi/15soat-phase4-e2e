@@ -10,14 +10,7 @@ Este diagrama documenta a gestão e padronização dos serviços oferecidos pela
 > [!NOTE]
 > **🔒 Autenticação & Emissão de JWT**: A obtenção e emissão de tokens Bearer JWT via Keycloak estão detalhadas no diagrama [user_authentication.md](../auth-lambda/user_authentication.md).
 
-<div style="overflow-x: auto; width: 100%;">
-<style>
-  .mermaid svg {
-    max-width: none !important;
-    min-width: 850px !important;
-    width: 850px !important;
-  }
-</style>
+---
 
 ```mermaid
 sequenceDiagram
@@ -49,5 +42,3 @@ sequenceDiagram
     DB-->>-WO: Código já cadastrado
     WO-->>-Admin: 400 Bad Request (ProblemDetail: RESOURCE_ALREADY_EXISTS)
 ```
-
-</div>

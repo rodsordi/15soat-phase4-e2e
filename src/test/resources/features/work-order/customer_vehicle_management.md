@@ -10,14 +10,7 @@ Este diagrama documenta o ciclo completo de onboarding de clientes e gestão de 
 > [!NOTE]
 > **🔒 Autenticação & Emissão de JWT**: A obtenção e emissão de tokens Bearer JWT via Keycloak estão detalhadas no diagrama [user_authentication.md](../auth-lambda/user_authentication.md).
 
-<div style="overflow-x: auto; width: 100%;">
-<style>
-  .mermaid svg {
-    max-width: none !important;
-    min-width: 1250px !important;
-    width: 1250px !important;
-  }
-</style>
+---
 
 ```mermaid
 sequenceDiagram
@@ -101,5 +94,3 @@ sequenceDiagram
     DB-->>-WO: Violação de integridade de negócio
     WO-->>-Ator: 422 Unprocessable Entity (ProblemDetail RFC 7807)
 ```
-
-</div>

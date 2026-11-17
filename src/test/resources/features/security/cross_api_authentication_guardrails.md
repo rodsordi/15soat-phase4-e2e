@@ -17,15 +17,6 @@ Qualquer requisição que atinja os microsserviços sem o cabeçalho `Authorizat
 
 ## 2. Diagrama de Sequência: Bloqueio Transversal de Requisições Não Autenticadas (HTTP 401)
 
-<div style="overflow-x: auto; width: 100%;">
-<style>
-  .mermaid svg {
-    max-width: none !important;
-    min-width: 950px !important;
-    width: 950px !important;
-  }
-</style>
-
 ```mermaid
 sequenceDiagram
     autonumber
@@ -41,11 +32,9 @@ sequenceDiagram
     %% =========================================================================
     rect rgb(253, 242, 242)
         Note over Ator,Controller: [Cenário 1] Tentativa de Acesso Sem Cabeçalho Authorization
-        Ator->>SecFilter: GET / POST /api/v1/{resource}<br/>Headers: [Authorization: ausente]
-        activate SecFilter
+        Ator->>+SecFilter: GET / POST /api/v1/{resource}<br/>Headers: [Authorization: ausente]
         SecFilter->>SecFilter: Verifica ausência de credenciais Bearer<br/>(AuthenticationException disparada)
-        SecFilter-->>Ator: 401 Unauthorized<br/>WWW-Authenticate: Bearer resource_metadata="..."
-        deactivate SecFilter
+        SecFilter-->>-Ator: 401 Unauthorized<br/>WWW-Authenticate: Bearer resource_metadata="..."
     end
 
     %% =========================================================================
@@ -53,26 +42,23 @@ sequenceDiagram
     %% =========================================================================
     rect rgb(254, 249, 195)
         Note over Ator,Controller: [Cenário 2] Tentativa de Acesso com Token Malformado / Inválido
-        Ator->>SecFilter: GET / POST /api/v1/{resource}<br/>Headers: Authorization: Bearer {malformed}
-        activate SecFilter
-        SecFilter->>ResourceServer: Submete token para validação e decodificação
-        activate ResourceServer
-        ResourceServer-->>SecFilter: Rejeição: BadJwtException / Parse Failure
-        deactivate ResourceServer
-        SecFilter-->>Ator: 401 Unauthorized<br/>WWW-Authenticate: Bearer error="invalid_token",<br/>error_description="Bearer token is malformed"
-        deactivate SecFilter
+        Ator->>+SecFilter: GET / POST /api/v1/{resource}<br/>Headers: Authorization: Bearer {malformed}
+        SecFilter->>+ResourceServer: Submete token para validação e decodificação
+        ResourceServer-->>-SecFilter: Rejeição: BadJwtException / Parse Failure
+        SecFilter-->>-Ator: 401 Unauthorized<br/>WWW-Authenticate: Bearer error="invalid_token"
     end
 
-    Note over Controller: Microservice Controller nunca é acionado nestes cenários,<br/>garantindo proteção contra sobrecarga de I/O e banco de dados.
+    %% =========================================================================
+    %% Fluxo 3: Requisição Legítima com Token Válido (Cenário 3 - Controle de Sanidade)
+    %% =========================================================================
+    rect rgb(240, 253, 244)
+        Note over Ator,Controller: [Cenário 3] Requisição com Bearer Token Assinado pelo Keycloak
+        Ator->>+SecFilter: GET / POST /api/v1/{resource}<br/>Headers: Authorization: Bearer {valid_jwt}
+        SecFilter->>+ResourceServer: Decodifica e valida assinatura RS256 via JWKS
+        ResourceServer->>ResourceServer: Extrai roles, claims e tenant
+        ResourceServer-->>-SecFilter: Retorna JwtAuthenticationToken populado
+        SecFilter->>+Controller: Encaminha requisição autenticada
+        Controller-->>-SecFilter: 200 OK / 201 Created (Resposta de Negócio)
+        SecFilter-->>-Ator: 200 OK / 201 Created
+    end
 ```
-
-</div>
-
----
-
-## 3. Matriz de Paridade com os Cenários BDD
-
-| Cenário Gherkin | Rota / Método Auditado | Comportamento de Interceptação | Status HTTP |
-| :--- | :--- | :--- | :---: |
-| **Cenário 1: Token Ausente** | Todas as rotas de `work-order`, `billing`, `exec` | Interceptado no `BearerTokenAuthenticationFilter` por ausência de credenciais | **401 Unauthorized** |
-| **Cenário 2: Token Malformado** | Todas as rotas de `work-order`, `billing`, `exec` | Interceptado na tentativa de parsing do token (`BadJwtException`) | **401 Unauthorized** |

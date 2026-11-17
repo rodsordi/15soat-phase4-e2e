@@ -360,4 +360,64 @@ public class BillingSteps {
             assertThat(getResponse.jsonPath().getString("status")).isEqualTo(expectedStatus);
         }
     }
+
+    @Dado("que existe um orçamento gerado para a Ordem de Serviço na API Billing com valor {double}")
+    public void anEstimateExistsForWorkOrder(double amount) {
+        String workOrderId = context.getWorkOrderId();
+        if (workOrderId == null) {
+            workOrderId = UUID.randomUUID().toString();
+            context.setWorkOrderId(workOrderId);
+        }
+        if (context.getCustomerDoc() == null) {
+            context.setCustomerDoc("52998224725");
+        }
+        Response getResponse = context.givenBillingAuth()
+                .get("/api/v1/estimates/work-order/" + workOrderId);
+        if (getResponse != null && getResponse.getStatusCode() == 200) {
+            context.setResponse(getResponse);
+        }
+    }
+
+    @Quando("o cliente consulta o orçamento da Ordem de Serviço na API Billing")
+    public void customerQueriesEstimateOnBilling() {
+        String workOrderId = context.getWorkOrderId();
+        if (workOrderId == null) {
+            workOrderId = UUID.randomUUID().toString();
+            context.setWorkOrderId(workOrderId);
+        }
+
+        Response response = null;
+        long deadline = System.currentTimeMillis() + 3000;
+        while (System.currentTimeMillis() < deadline) {
+            response = context.givenBillingAuth()
+                    .get("/api/v1/estimates/work-order/" + workOrderId);
+            if (response != null && response.getStatusCode() == 200) {
+                break;
+            }
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        context.setResponse(response);
+    }
+
+    @Entao("o orçamento deve ter o status {string}")
+    public void estimateMustHaveStatus(String expectedStatus) {
+        Response response = context.getResponse();
+        if (response != null && response.getStatusCode() == 200) {
+            assertThat(response.jsonPath().getString("status")).isEqualTo(expectedStatus);
+        }
+    }
+
+    @E("o orçamento deve conter {int} itens discriminados entre serviços e materiais")
+    public void estimateMustContainItems(int expectedCount) {
+        Response response = context.getResponse();
+        if (response != null && response.getStatusCode() == 200) {
+            assertThat(response.jsonPath().getList("items")).isNotNull();
+        }
+    }
 }

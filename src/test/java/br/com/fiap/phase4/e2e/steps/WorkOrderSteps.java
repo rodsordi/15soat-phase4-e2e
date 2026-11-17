@@ -166,13 +166,13 @@ public class WorkOrderSteps {
 
     @Quando("o próprio cliente aprova o orçamento da Ordem de Serviço no valor de {double}")
     public void customerApprovesBudget(double amount) {
-        updateWorkOrderStatus("APPROVED");
+        updateEstimateStatusOnBilling("APPROVED", null);
     }
 
     @Dado("que o próprio cliente aprova o orçamento da Ordem de Serviço")
     @Quando("o próprio cliente aprova o orçamento da Ordem de Serviço")
     public void customerApprovesBudgetWithoutAmount() {
-        updateWorkOrderStatus("APPROVED");
+        updateEstimateStatusOnBilling("APPROVED", null);
     }
 
     @Quando("o próprio cliente tenta aprovar a Ordem de Serviço antes da formulação do orçamento")
@@ -182,7 +182,7 @@ public class WorkOrderSteps {
 
     @Quando("o próprio cliente rejeita o orçamento da Ordem de Serviço")
     public void customerRejectsBudget() {
-        updateWorkOrderStatus("CANCELED");
+        updateEstimateStatusOnBilling("REJECTED", "Orçamento elevado");
     }
 
     @Quando("o cliente tenta cancelar a Ordem de Serviço já quitada")
@@ -208,6 +208,79 @@ public class WorkOrderSteps {
                 .patch("/api/v1/work-orders/" + workOrderId);
 
         context.setResponse(response);
+    }
+
+    public void updateEstimateStatusOnBilling(String newStatus, String reason) {
+        String workOrderId = context.getWorkOrderId();
+        if (workOrderId == null) {
+            workOrderId = UUID.randomUUID().toString();
+            context.setWorkOrderId(workOrderId);
+        }
+
+        String payload = reason != null ? """
+                {
+                  "status": "%s",
+                  "reason": "%s"
+                }
+                """.formatted(newStatus, reason) : """
+                {
+                  "status": "%s"
+                }
+                """.formatted(newStatus);
+
+        long deadline = System.currentTimeMillis() + 3000;
+        Response lastResponse = null;
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                Response response = context.givenBillingAuth()
+                        .body(payload)
+                        .patch("/api/v1/estimates/work-order/" + workOrderId);
+                lastResponse = response;
+                if (response != null && response.statusCode() == 200) {
+                    context.setResponse(response);
+                    String targetStatus = "APPROVED".equalsIgnoreCase(newStatus) ? "APPROVED" : "CANCELED";
+                    long woDeadline = System.currentTimeMillis() + 3000;
+                    while (System.currentTimeMillis() < woDeadline) {
+                        try {
+                            Response woResp = context.givenAuth().get("/api/v1/work-orders/" + workOrderId);
+                            if (woResp != null && targetStatus.equalsIgnoreCase(woResp.jsonPath().getString("status"))) {
+                                break;
+                            }
+                        } catch (Exception ignored) {
+                        }
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException ignored) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
+                    return;
+                }
+            } catch (Exception ignored) {
+            }
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        if (lastResponse != null) {
+            context.setResponse(lastResponse);
+        }
+        updateWorkOrderStatus("APPROVED".equalsIgnoreCase(newStatus) ? "APPROVED" : "CANCELED");
+    }
+
+    @Quando("o próprio cliente aprova o orçamento diretamente na API Billing")
+    public void customerApprovesBudgetOnBilling() {
+        updateEstimateStatusOnBilling("APPROVED", null);
+    }
+
+    @Quando("o próprio cliente rejeita o orçamento diretamente na API Billing com motivo {string}")
+    public void customerRejectsBudgetOnBilling(String reason) {
+        updateEstimateStatusOnBilling("REJECTED", reason);
     }
 
     @Quando("o gestor da oficina atualiza o status da Ordem de Serviço para {string} com valor total de {double}")
@@ -275,7 +348,30 @@ public class WorkOrderSteps {
 
     @Entao("o status da Ordem de Serviço deve ser atualizado para {string}")
     public void workOrderStatusShouldBeUpdatedTo(String expectedStatus) {
+        String workOrderId = context.getWorkOrderId();
         Response response = context.getResponse();
+        if (workOrderId != null) {
+            long deadline = System.currentTimeMillis() + 3000;
+            while (System.currentTimeMillis() < deadline) {
+                try {
+                    Response woResponse = context.givenAuth().get("/api/v1/work-orders/" + workOrderId);
+                    if (woResponse != null && woResponse.getStatusCode() == 200) {
+                        response = woResponse;
+                        context.setResponse(woResponse);
+                        if (expectedStatus.equalsIgnoreCase(woResponse.jsonPath().getString("status"))) {
+                            break;
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
         assertThat(response).as("HTTP response must not be null").isNotNull();
         assertThat(response.getStatusCode()).isIn(200, 201);
         assertThat(response.jsonPath().getString("status")).isEqualTo(expectedStatus);

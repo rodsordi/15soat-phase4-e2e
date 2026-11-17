@@ -21,16 +21,6 @@ A arquitetura macro está detalhada a seguir segundo os níveis canônicos do **
 
 Apresenta os usuários do sistema, os limites da solução de oficina mecânica e a integração com sistemas externos de pagamento:
 
-<div style="overflow-x: auto; width: 100%;">
-<style>
-  .mermaid svg {
-    max-width: none !important;
-    min-width: 1200px !important;
-    width: 1200px !important;
-  }
-</style>
-<div style="min-width: 1200px;">
-
 ```mermaid
 C4Context
     title Diagrama de Contexto de Sistema - Sistema de Gestão de Oficina Mecânica (Fase 4)
@@ -54,8 +44,6 @@ C4Context
 
     UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="1")
 ```
-</div>
-</div>
 
 ---
 
@@ -63,29 +51,19 @@ C4Context
 
 Detalhamento de todos os contêineres de aplicação, mensageria distribuída, bancos de dados relacionais e NoSQL, proxies de borda e funções serverless:
 
-<div style="overflow-x: auto; width: 100%;">
-<style>
-  .mermaid svg {
-    max-width: none !important;
-    min-width: 1850px !important;
-    width: 1850px !important;
-  }
-</style>
-<div style="min-width: 1850px;">
-
 ```mermaid
 C4Container
     title Diagrama de Contêineres - Sistema de Gestão de Oficina Mecânica (Fase 4)
-
+  
     Enterprise_Boundary(b_actors, "1. Atores & Clientes") {
         Person(customer, "Cliente da Oficina", "Aprova orçamentos e realiza<br/>pagamentos Pix.")
         Person(mechanic, "Mecânico / Atendente", "Abre ordens de serviço, inspeciona<br/>veículos e registra manutenções.")
     }
 
     Container_Boundary(b_edge, "2. Camada de Borda & Serverless (iac-lambda)") {
-        Container(nlb, "AWS Network Load Balancer (NLB)", "AWS NLB", "Entrada de rede de alta performance (L4)<br/>para o cluster EKS.")
         Container(apigw, "AWS HTTP API Gateway v2", "AWS API Gateway", "Ponto de entrada público para rotas<br/>serverless e recepção de webhooks.")
         Container(webhook, "Lambda Mercado Pago Webhook", "Node.js 20 / Lambda", "Recepção e validação de callbacks<br/>de notificação de pagamento Pix.")
+        Container(nlb, "AWS Network Load Balancer (NLB)", "AWS NLB", "Entrada de rede de alta performance (L4)<br/>para o cluster EKS.")
     }
 
     Container_Boundary(eksCluster, "3. Plataforma Kubernetes Amazon EKS 1.30 (iac-k8s)") {
@@ -112,82 +90,137 @@ C4Container
     Rel_Down(customer, nlb, "Consulta OS e aprova orçamentos", "HTTPS / JSON")
     Rel_Down(mechanic, nlb, "Gerencia ordens de serviço<br/>e manutenções", "HTTPS / JSON")
 
-    Rel(apigw, webhook, "Roteia payloads de<br/>notificação Pix", "AWS Lambda Invoke")
-    Rel(webhook, nlb, "Encaminha notificação<br/>confirmada", "HTTPS / JSON")
+    Rel_Right(apigw, webhook, "Roteia payloads de<br/>notificação Pix", "AWS Lambda Invoke")
+    Rel_Right(webhook, nlb, "Encaminha notificação<br/>confirmada", "HTTPS / JSON")
 
     Rel_Down(nlb, kong, "Encaminha tráfego balanceado L4/L7", "TCP / 80/443")
     Rel_Down(kong, api_wo, "Roteia /api/v1/work-orders", "HTTP / REST")
     Rel_Down(kong, api_billing, "Roteia /api/v1/invoices", "HTTP / REST")
     Rel_Down(kong, api_exec, "Roteia /api/v1/executions", "HTTP / REST")
 
-    Rel(api_wo, kafka, "Publica: work-order.approved<br/>Consome: payment.failed,<br/>execution.completed", "Kafka Protocol")
-    Rel(api_billing, kafka, "Consome: work-order.approved<br/>Publica: payment.confirmed,<br/>payment.failed", "Kafka Protocol")
-    Rel(api_exec, kafka, "Consome: payment.confirmed<br/>Publica: execution.completed", "Kafka Protocol")
+    Rel(api_wo, kafka, "work-order-events", "Kafka Protocol")
+    Rel(api_billing, kafka, "payment-events", "Kafka Protocol")
+    Rel(api_exec, kafka, "execution-events", "Kafka Protocol")
 
     Rel_Down(api_wo, rds_wo, "Persiste ordens de serviço<br/>e veículos", "JDBC / HikariCP")
     Rel_Down(api_billing, rds_billing, "Persiste faturas e status<br/>de pagamento", "JDBC / HikariCP")
     Rel(api_exec, mongo, "Persiste histórico de execuções", "mongodb://")
 
-    Rel(rds_wo, secrets, "Credenciais gerenciadas", "AWS KMS")
-    Rel(rds_billing, secrets, "Credenciais gerenciadas", "AWS KMS")
+    Rel_Right(rds_wo, secrets, "Credenciais gerenciadas", "AWS KMS")
+    Rel_Right(rds_billing, secrets, "Credenciais gerenciadas", "AWS KMS")
     Rel(mongo, secrets, "Credenciais gerenciadas", "AWS KMS")
 
     Rel_Down(api_billing, mercadopago, "Gera ordem de pagamento<br/>e QR Code Pix", "HTTPS / REST")
-    Rel(mercadopago, apigw, "Dispara notificações<br/>de liquidação (Webhook)", "HTTPS / Webhook")
+    Rel_Up(mercadopago, apigw, "Dispara notificações<br/>de liquidação (Webhook)", "HTTPS / Webhook")
 
-    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+    UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")
 ```
-</div>
-</div>
 
 ---
 
 ### 3. Visão Dinâmica: Coreografia da Saga Distribuída (Choreographed Saga)
 
-Ilustra o comportamento temporal e as trocas assíncronas de mensagens via Apache Kafka entre os microsserviços durante o ciclo de vida da Ordem de Serviço:
-
-<div style="overflow-x: auto; width: 100%;">
-<style>
-  .mermaid svg {
-    max-width: none !important;
-    min-width: 1450px !important;
-    width: 1450px !important;
-  }
-</style>
-<div style="min-width: 1450px;">
+Ilustra o comportamento temporal e as trocas assíncronas de mensagens via Apache Kafka entre os microsserviços durante o ciclo de vida da Ordem de Serviço, em conformidade com a ADR-004 e especificado em [`choreographed_saga.md`](src/test/resources/features/saga/choreographed_saga.md):
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant WO as api-work-order<br/>(Spring Boot 4 / PG)
-    participant K as Apache Kafka<br/>Broker (KRaft)
-    participant B as api-billing<br/>(Spring Boot 4 / PG)
-    participant MP as Mercado Pago<br/>Gateway (Pix)
-    participant E as api-exec<br/>(Spring Boot 4 / Mongo)
+    box rgba(100, 116, 139, 0.08) Atores de Negócio
+        actor Cliente as Cliente<br/>(CUSTOMER)
+        actor Atendente as Atendente<br/>(Recepção)
+    end
+    box rgba(59, 130, 246, 0.08) Cluster Amazon EKS (Microsserviços)
+        participant OS as API Ordem de Serviço<br/>(PostgreSQL)
+        participant Exec as API Execução & Oficina<br/>(MongoDB)
+        participant Billing as API Faturamento<br/>(PostgreSQL)
+    end
+    box rgba(34, 197, 94, 0.08) Mensageria Gerenciada
+        participant Kafka as Apache Kafka<br/>Broker
+    end
+    box rgba(249, 115, 22, 0.08) Gateway Externo
+        participant MP as Mercado Pago<br/>Gateway
+    end
 
-    Note over WO,E: 1. Ciclo Comercial & Início da Saga
-    WO->>K: Publica WorkOrderApprovedEvent<br/>(Tópico: work-order.approved)
-    K->>B: Consome WorkOrderApprovedEvent
-    B->>+MP: Gera Fatura e Solicita QR Code Pix
-    MP-->>-B: Retorna QR Code Pix para Pagamento
+    Note over Cliente,Billing: 🔒 Borda Autenticada via Bearer JWT (vide user_authentication.md):<br/>Cliente (CUSTOMER) e Atendente (EMPLOYEE) autenticados via Keycloak
 
-    alt Cenário de Sucesso (Happy Path)
-        MP->>B: Webhook: Pagamento Confirmado
-        B->>K: Publica PaymentConfirmedEvent<br/>(Tópico: payment.confirmed)
-        K->>E: Consome PaymentConfirmedEvent
-        E->>E: Enfileira OS e Executa Reparo na Oficina
-        E->>K: Publica ExecutionCompletedEvent<br/>(Tópico: execution.completed)
-        K->>WO: Consome ExecutionCompletedEvent
-        WO->>WO: Finaliza OS<br/>(Status: COMPLETED / DELIVERED)
-    else Cenário de Falha & Compensação (Rollback)
-        MP->>B: Webhook: Pagamento Rejeitado / Expirado
-        B->>K: Publica PaymentFailedEvent<br/>(Tópico: payment.failed)
-        K->>WO: Consome PaymentFailedEvent
-        WO->>WO: Estorna Reserva de Peças<br/>& Cancela OS (Status: CANCELED)
+    %% Abertura & Aprovação
+    Note over Cliente,MP: 1. Abertura da Ordem de Serviço e Reserva Preventiva de Peças
+    Atendente->>+OS: POST /api/v1/work-orders<br/>{ customerDocument, licensePlate, description }
+    OS->>OS: Salva OS no PG (Status: RECEIVED)<br/>e reserva materiais no estoque
+    OS-->>-Atendente: 201 Created (workOrderId)
+
+    Note over Cliente,MP: 2. Decisão Soberana: Aprovação do Orçamento na API Billing
+    Cliente->>+Billing: PATCH /api/v1/estimates/work-order/{id}<br/>{ status: "APPROVED" }
+    Billing->>Billing: Atualiza Estimate para APPROVED
+    Billing--)Kafka: Publica EstimateApprovedEvent<br/>(Tópico: billing-events)
+    Billing-->>-Cliente: 200 OK (EstimateDetailedResponse)
+    Kafka--)OS: Consome EstimateApprovedEvent<br/>(Tópico: billing-events)
+    activate OS
+    OS->>OS: Libera OS e atualiza para APPROVED<br/>(materiais já reservados)
+    OS--)Kafka: Publica WorkOrderApprovedEvent<br/>(Tópico: work-order-events)
+    deactivate OS
+
+    %% Faturamento e Liquidação
+    Note over Kafka,MP: 3. Geração de Fatura e Liquidação Mercado Pago
+    Kafka--)Billing: Consome WorkOrderApprovedEvent<br/>(Tópico: work-order-events)
+    activate Billing
+    Billing->>Billing: Registra fatura no PostgreSQL<br/>(Status: PENDING)
+    deactivate Billing
+
+    alt Cenário de Sucesso (Happy Path: Pagamento Confirmado & Execução Concluída)
+        MP->>+Billing: POST /api/v1/payments/mercadopago/webhook<br/>{ action: "payment.updated", data: { id: "ORD-9988" } }
+        Billing->>+MP: GET /v1/orders/{order_id}<br/>(Reconciliação e Verificação Ativa)
+        MP-->>-Billing: Retorna status: "approved"
+        Billing->>Billing: Valida idempotência e atualiza fatura para PAID
+        Billing--)Kafka: Publica PaymentConfirmedEvent<br/>(Tópico: payment-events)
+        Billing-->>-MP: 200 OK { status: "PROCESSED" }
+
+        %% Oficina
+        Kafka--)Exec: Consome PaymentConfirmedEvent<br/>(Tópico: payment-events)
+        activate Exec
+        Exec->>Exec: Salva ordem no MongoDB (Status: QUEUED)
+        Exec--)Kafka: Publica ExecutionStartedEvent<br/>(Tópico: execution-events)
+        Exec->>Exec: Mecânico executa reparos na baia (Status: COMPLETED)
+        Exec--)Kafka: Publica ExecutionCompletedEvent<br/>(Tópico: execution-events)
+        deactivate Exec
+
+        %% Finalização OS
+        Kafka--)OS: Consome ExecutionCompletedEvent<br/>(Tópico: execution-events)
+        activate OS
+        OS->>OS: Atualiza OS para COMPLETED<br/>e baixa materiais do estoque físico
+        OS-->>Cliente: Envia e-mail notificando veículo pronto<br/>(Status: COMPLETED)
+        deactivate OS
+        Atendente->>+OS: GET /api/v1/work-orders/{id}
+        OS-->>-Atendente: 200 OK (Status: COMPLETED)
+
+    else Cenário de Falha 1 (Rollback por Recusa de Pagamento)
+        MP->>+Billing: Webhook: Pagamento Rejeitado / Expirado
+        Billing->>+MP: GET /v1/orders/{order_id} (Reconciliação)
+        MP-->>-Billing: Retorna status: "rejected"
+        Billing->>Billing: Atualiza fatura para FAILED
+        Billing--)Kafka: Publica PaymentFailedEvent<br/>(Tópico: payment-events)
+        Billing-->>-MP: 200 OK
+        Kafka--)OS: Consome PaymentFailedEvent<br/>(Tópico: payment-events)
+        activate OS
+        OS->>OS: Cancela OS (Status: CANCELED)<br/>e estorna reserva de materiais no estoque
+        OS-->>Cliente: Notifica cancelamento por e-mail
+        deactivate OS
+
+    else Cenário de Falha 2 (Rollback com Estorno Financeiro por Falha na Oficina)
+        Exec--)Kafka: Publica ExecutionFailedEvent<br/>(Tópico: execution-events)
+        Kafka--)Billing: Consome ExecutionFailedEvent
+        activate Billing
+        Billing->>+MP: POST /v1/orders/{order_id}/refunds (Estorno)
+        MP-->>-Billing: 200 OK (Refunded)
+        Billing->>Billing: Atualiza fatura para REFUNDED
+        deactivate Billing
+        Kafka--)OS: Consome ExecutionFailedEvent
+        activate OS
+        OS->>OS: Cancela OS (Status: CANCELED)<br/>e estorna reserva de materiais
+        OS-->>Cliente: Notifica cancelamento e estorno por e-mail
+        deactivate OS
     end
 ```
-</div>
-</div>
 
 ---
 

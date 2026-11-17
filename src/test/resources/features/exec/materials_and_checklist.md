@@ -10,14 +10,7 @@ Este diagrama documenta o lançamento de insumos e preenchimento de checklists o
 > [!NOTE]
 > **🔒 Autenticação & Emissão de JWT**: A obtenção e emissão de tokens Bearer JWT via Keycloak estão detalhadas no diagrama [user_authentication.md](../auth-lambda/user_authentication.md).
 
-<div style="overflow-x: auto; width: 100%;">
-<style>
-  .mermaid svg {
-    max-width: none !important;
-    min-width: 900px !important;
-    width: 900px !important;
-  }
-</style>
+---
 
 ```mermaid
 sequenceDiagram
@@ -49,5 +42,3 @@ sequenceDiagram
     Mongo-->>-Exec: Retorna documento com materials e checklist
     Exec-->>-Mecanico: Retorna 200 OK (ExecutionDetailedResponse)
 ```
-
-</div>

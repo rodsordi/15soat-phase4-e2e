@@ -15,14 +15,7 @@ Este diagrama documenta a arquitetura de autenticação centralizada e emissão 
 > **Gestão de Identidades**:
 > O gerenciamento e cadastro prévio dos usuários no Keycloak e catálogo estão documentados em [user_identity_management.md](user_identity_management.md).
 
-<div style="overflow-x: auto; width: 100%;">
-<style>
-  .mermaid svg {
-    max-width: none !important;
-    min-width: 1250px !important;
-    width: 1250px !important;
-  }
-</style>
+---
 
 ```mermaid
 sequenceDiagram
@@ -61,13 +54,11 @@ sequenceDiagram
     Lambda-->>-Cliente: 200 OK com Access Token JWT<br/>(claims: roles: ["CUSTOMER"], sub: "uuid-customer")
 
     %% -------------------------------------------------------------------------
-    %% 4. Cenário de Falha: Credenciais Inválidas (401 Unauthorized)
+    %% 4. Tratamento Defensivo: Credenciais Inválidas (401 Unauthorized)
     %% -------------------------------------------------------------------------
-    Note over Cliente,KC: 4. Cenário de Falha: Credenciais Inválidas (401 Unauthorized)
-    Cliente->>+Lambda: POST /auth/login<br/>{ username: "43768298096", password: "WrongPassword!" }
-    Lambda->>+KC: POST /realms/garage/protocol/openid-connect/token<br/>(grant_type=password)
+    Note over Cliente,KC: 4. Tratamento Defensivo: Falha de Autenticação (Cenário de Erro)
+    Cliente->>+Lambda: POST /auth/login<br/>{ username: "43768298096", password: "WrongPassword" }
+    Lambda->>+KC: POST /realms/garage/protocol/openid-connect/token
     KC-->>-Lambda: 401 Unauthorized (invalid_grant)
-    Lambda-->>-Cliente: 401 Unauthorized<br/>(ProblemDetail: INVALID_CREDENTIALS)
+    Lambda-->>-Cliente: 401 Unauthorized (ProblemDetail: INVALID_CREDENTIALS)
 ```
-
-</div>

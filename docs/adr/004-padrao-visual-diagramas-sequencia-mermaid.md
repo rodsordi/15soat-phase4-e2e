@@ -38,40 +38,31 @@ Decidiu-se **padronizar a construção e a renderização dos diagramas de sequ�
    - Deixar explícito que filas internas (Kafka) e bancos de dados não pertencem à sessão Bearer JWT.
    - Complementar no texto Markdown (fora do SVG) com um callout `[!NOTE]` contendo o link hipertexto navegável para `user_authentication.md` (emissão de credenciais).
 
-4. **Anulação de Compressão de SVG e Garantia de Rolagem Horizontal (IntelliJ IDEA & Browsers)**:
-   - Para impedir que IDEs (como IntelliJ IDEA / JCEF) ou visualizadores Markdown forcem `max-width: 100%` no SVG e reduzam as fontes a tamanhos ilegíveis, todo diagrama deve ser envolvido pelo seguinte padrão CSS:
-     ```html
-     <div style="overflow-x: auto; width: 100%;">
-     <style>
-       .mermaid svg {
-         max-width: none !important;
-         min-width: [LARGURA]px !important;
-         width: [LARGURA]px !important;
-       }
-     </style>
+4. **Padrão "Pure Mermaid First" (Erradicação de Divs e Tags de Estilo)**:
+   - Os diagramas Mermaid devem ser emitidos **exclusivamente na sintaxe nativa e limpa de Markdown** (fenced code block ```mermaid ... ```).
+   - **É terminantemente proibido adicionar `<div>` ao redor dos diagramas Mermaid ou injetar tags `<style>` com regras globais** (como `.mermaid svg { ... }`), prevenindo o anti-pattern "Div Soup", garantindo portabilidade entre IDEs (IntelliJ, VS Code) e renderizadores nativos (GitHub, GitLab, Docusaurus) e evitando bloqueios por políticas de segurança CSP.
+   - **Legibilidade e Anti-Compressão Nativas**: A legibilidade visual de diagramas densos é obtida estritamente através da modelagem e sintaxe intrínseca do Mermaid:
+     - Quebras de linha com `<br/>` em mensagens e payloads (mantendo as lifelines próximas horizontalmente).
+     - Empilhamento de rótulos dos participantes (`Nome<br/>(Papel)`).
+     - Numeração automática com `autonumber`.
 
-     ```mermaid
-     sequenceDiagram
-     ...
-     ```
-     </div>
-     ```
-   - **Abstração Direta (Sem Gateway como Participante Pass-Through)**:
-     - O participante intermediário de borda (Kong Gateway / API Gateway) é omitido como coluna repetitiva nos diagramas de domínio e coreografia, sendo declarado na nota inicial de borda segura com referência canônica: `🔒 Borda Autenticada via Bearer JWT (vide user_authentication.md): Requisições utilizam token OIDC`.
-     - Isso elimina setas redundantes de proxy (`Ator -> Kong -> Microsserviço`) e reduz a largura total do diagrama, permitindo excelente legibilidade em IDEs (IntelliJ IDEA) e no GitHub.
+5. **Abstração Direta (Sem Gateway como Participante Pass-Through)**:
+   - O participante intermediário de borda (Kong Gateway / API Gateway) é omitido como coluna repetitiva nos diagramas de domínio e coreografia, sendo declarado na nota inicial de borda segura com referência canônica: `🔒 Borda Autenticada via Bearer JWT (vide user_authentication.md): Requisições utilizam token OIDC`.
+   - Isso elimina setas redundantes de proxy (`Ator -> Kong -> Microsserviço`) e reduz a largura total do diagrama, permitindo excelente legibilidade em IDEs (IntelliJ IDEA) e no GitHub.
 
-   - **Matriz de Dimensionamento Otimizada por Quantidade de Participantes**:
-     - **3 participantes**: `850px` a `900px` (ex: `service_catalog_management.md`, `material_management.md`, `materials_and_checklist.md`, `payment_webhook_processing.md`).
-     - **4 participantes**: `1050px` (ex: `invoice_generation.md`, `execution_queue_and_repair.md`).
-     - **5 participantes**: `1200px` a `1250px` (ex: `customer_vehicle_management.md`, `user_authentication.md`, `choreographed_saga.md` - Cenários 1 e 2).
-     - **6 a 7 participantes / Ciclos Completos**: `1200px` a `1450px` (ex: `work_order_lifecycle.md`, `choreographed_saga.md` - Cenário 3).
+6. **Semântica UML Assíncrona (`--)`) e Agrupamentos por `box`**:
+   - **Mensageria Orientada a Eventos (`--)`)**: Toda publicação ou consumo assíncrono via Apache Kafka (ou SQS/SNS) deve utilizar a seta pontilhada assíncrona do Mermaid (`--)`), reservando setas sólidas síncronas (`->>`) e retornos síncronos (`-->>`) estritamente para chamadas RPC/HTTP/REST e retornos diretos.
+   - **Agrupamentos Arquiteturais Nativos (`box`)**: Utilização de contêineres nativos `box <cor> <Título> ... end` para agrupar visualmente participantes por camada arquitetural (ex: *Atores de Negócio*, *Cluster Amazon EKS*, *Mensageria Gerenciada*, *Gateway Externo*), sem recorrer a tags HTML ou divs.
 
 ## Consequências
 
 ### Positivas
+- **Pure Markdown & Zero Div Soup**: Documentação limpa, portátil e renderizada nativamente em qualquer plataforma sem poluição de tags HTML.
+- **Rigor e Fidelidade Semântica UML**: Diferenciação clara entre chamadas síncronas bloqueantes (`->>`) e mensageria assíncrona fire-and-forget (`--)`).
+- **Segregação Arquitetural Visual**: O uso de `box` nativo delimita instantaneamente fronteiras de infraestrutura e responsabilidade.
 - **Diagramas Claros e Compactos**: Eliminação de espaço horizontal vazio e leitura vertical fluida.
 - **Riqueza Semântica UML**: As caixas de ativação demonstram graficamente quem está retendo tempo de processamento e conexões ativas.
-- **Responsividade Aprimorada**: Redução para `700px` nos diagramas menores evita barras de rolagem desnecessárias no GitHub e em ferramentas de documentação.
+- **Responsividade Aprimorada**: Sem barras de rolagem artificiais geradas por estilos inline.
 
 ### Trade-offs
-- A adição de `<br/>` e operadores `+`/`-` exige atenção ao editar novas setas no Mermaid para manter a paridade de abertura e fechamento de blocos de ativação.
+- A adição de `<br/>`, operadores `+`/`-`, agrupamentos `box` e setas assíncronas `--)` exige consistência ao editar novas features para manter a paridade estética e semântica do projeto.

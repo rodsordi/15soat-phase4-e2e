@@ -12,22 +12,23 @@ Este diagrama documenta a entrada do veículo na fila de oficina, avanço de sta
 > [!NOTE]
 > **🔒 Autenticação & Emissão de JWT**: A obtenção e emissão de tokens Bearer JWT via Keycloak estão detalhadas no diagrama [user_authentication.md](../auth-lambda/user_authentication.md).
 
-<div style="overflow-x: auto; width: 100%;">
-<style>
-  .mermaid svg {
-    max-width: none !important;
-    min-width: 1050px !important;
-    width: 1050px !important;
-  }
-</style>
+---
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Mecanico as Mecânico / Técnico<br/>(Funcionário: EMPLOYEE)
-    participant Exec as API Exec<br/>(Spring Boot 4 / Mongo)
-    participant Mongo as MongoDB<br/>(exec_db)
-    participant Kafka as Apache Kafka<br/>Broker
+    box rgba(100, 116, 139, 0.08) Atores de Negócio
+        actor Mecanico as Mecânico / Técnico<br/>(Funcionário: EMPLOYEE)
+    end
+    box rgba(59, 130, 246, 0.08) Cluster Amazon EKS (Microsserviços)
+        participant Exec as API Exec<br/>(Spring Boot 4 / Mongo)
+    end
+    box rgba(168, 85, 247, 0.08) Camada de Persistência
+        participant Mongo as MongoDB<br/>(exec_db)
+    end
+    box rgba(34, 197, 94, 0.08) Mensageria Gerenciada
+        participant Kafka as Apache Kafka<br/>Broker
+    end
 
     Note over Mecanico,Exec: 🔒 Borda Autenticada via Bearer JWT (vide user_authentication.md):<br/>Requisições utilizam token OIDC emitido pelo Keycloak (Role: EMPLOYEE)
 
@@ -36,7 +37,7 @@ sequenceDiagram
     Mecanico->>+Exec: POST /api/v1/executions<br/>{ workOrderId, technicianId: "TECH-101" }
     Exec->>+Mongo: Salva documento com status QUEUED
     Mongo-->>-Exec: Confirma persistência
-    Exec->>Kafka: Publica ExecutionStartedEvent (Tópico: execution-events)
+    Exec--)Kafka: Publica ExecutionStartedEvent (Tópico: execution-events)
     Exec-->>-Mecanico: Retorna 201 Created (ExecutionResponse)
 
     %% Consulta da Fila Operacional
@@ -59,14 +60,14 @@ sequenceDiagram
         Mecanico->>+Exec: PATCH /api/v1/executions/{id}<br/>{ status: "COMPLETED" }
         Exec->>+Mongo: Atualiza status para COMPLETED e completedAt
         Mongo-->>-Exec: Confirma atualização
-        Exec->>Kafka: Publica ExecutionCompletedEvent (Tópico: execution-events)
+        Exec--)Kafka: Publica ExecutionCompletedEvent (Tópico: execution-events)
         Exec-->>-Mecanico: Retorna 200 OK
     else Interrupção por Impedimento Técnico (Falha)
         Note over Mecanico,Kafka: 4b. Registro de Falha e Justificativa (Status: FAILED)
         Mecanico->>+Exec: PATCH /api/v1/executions/{id}<br/>{ status: "FAILED", notes: "Bloco trincado" }
         Exec->>+Mongo: Atualiza status para FAILED e completedAt
         Mongo-->>-Exec: Confirma atualização
-        Exec->>Kafka: Publica ExecutionFailedEvent (Tópico: execution-events)
+        Exec--)Kafka: Publica ExecutionFailedEvent (Tópico: execution-events)
         Exec-->>-Mecanico: Retorna 200 OK
     end
 
@@ -76,5 +77,3 @@ sequenceDiagram
     Exec->>Exec: Valida status atual (COMPLETED/FAILED) -> Dispara DomainException
     Exec-->>-Mecanico: Retorna 400 Bad Request (ProblemDetail: EXECUTION_ALREADY_FINALIZED)
 ```
-
-</div>

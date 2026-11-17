@@ -7,21 +7,20 @@ Este diagrama documenta o recebimento e reconciliação dos webhooks do Mercado 
 > [!NOTE]
 > **🔒 Ingress de Pagamentos**: As notificações assíncronas do Mercado Pago são recebidas através da rota pública de webhook, sendo processadas com verificação ativa de status e idempotência estrita.
 
-<div style="overflow-x: auto; width: 100%;">
-<style>
-  .mermaid svg {
-    max-width: none !important;
-    min-width: 900px !important;
-    width: 900px !important;
-  }
-</style>
+---
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant MP as Mercado Pago<br/>Gateway
-    participant Billing as API Billing<br/>(Spring Boot 4 / PG)
-    participant Kafka as Apache Kafka<br/>Broker
+    box rgba(249, 115, 22, 0.08) Gateway Externo
+        participant MP as Mercado Pago<br/>Gateway
+    end
+    box rgba(59, 130, 246, 0.08) Cluster Amazon EKS (Microsserviços)
+        participant Billing as API Billing<br/>(Spring Boot 4 / PG)
+    end
+    box rgba(34, 197, 94, 0.08) Mensageria Gerenciada
+        participant Kafka as Apache Kafka<br/>Broker
+    end
 
     Note over MP,Billing: 🔒 Ingress de Notificação de Pagamento:<br/>Webhook do Mercado Pago recebido e validado com idempotência
 
@@ -31,7 +30,7 @@ sequenceDiagram
     Billing->>+MP: GET /v1/orders/{order_id}<br/>(Reconciliação e Verificação Ativa)
     MP-->>-Billing: Retorna dados da ordem (status: "approved")
     Billing->>Billing: Atualiza fatura para PAID<br/>(Controle Otimista @Version)
-    Billing->>Kafka: Publica PaymentConfirmedEvent<br/>(Tópico: payment-events)
+    Billing--)Kafka: Publica PaymentConfirmedEvent<br/>(Tópico: payment-events)
     Billing-->>-MP: Retorna 200 OK { status: "PROCESSED" }
 
     %% Pagamento Recusado
@@ -40,7 +39,7 @@ sequenceDiagram
     Billing->>+MP: GET /v1/orders/{order_id}<br/>(Reconciliação e Verificação Ativa)
     MP-->>-Billing: Retorna dados da ordem (status: "rejected")
     Billing->>Billing: Atualiza fatura para FAILED<br/>(Controle Otimista @Version)
-    Billing->>Kafka: Publica PaymentFailedEvent<br/>(Tópico: payment-events)
+    Billing--)Kafka: Publica PaymentFailedEvent<br/>(Tópico: payment-events)
     Billing-->>-MP: Retorna 200 OK { status: "PROCESSED" }
 
     %% Retransmissão / Idempotência
@@ -50,5 +49,3 @@ sequenceDiagram
     Note over Billing: Descarte idempotente:<br/>Fatura mantida em PAID<br/>Sem nova publicação no Kafka
     Billing-->>-MP: Retorna 200 OK { status: "PROCESSED" }
 ```
-
-</div>

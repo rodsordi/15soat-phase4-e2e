@@ -12,14 +12,7 @@ Este diagrama documenta o provisionamento de identidades e gerenciamento corpora
 > **Autenticação OIDC & Emissão de JWT**:
 > O fluxo de login e emissão de tokens de acesso JWT via Keycloak está documentado em [user_authentication.md](user_authentication.md).
 
-<div style="overflow-x: auto; width: 100%;">
-<style>
-  .mermaid svg {
-    max-width: none !important;
-    min-width: 1400px !important;
-    width: 1400px !important;
-  }
-</style>
+---
 
 ```mermaid
 sequenceDiagram
@@ -60,28 +53,26 @@ sequenceDiagram
     Lambda->>Lambda: Valida formato do documento e<br/>algoritmo Módulo 11 (CPF)
     Lambda->>+KC: POST /admin/realms/garage/users<br/>(Cria identidade com Unified ID)
     KC-->>-Lambda: 201 Created (userId: uuid)
-    Lambda->>+WO: POST /api/v1/customers<br/>{ id: uuid, document, name, email }
+    Lambda->>+WO: POST /api/v1/customers<br/>{ id: uuid, document: "52998224725", name, email }
     WO->>+DB: Persiste cadastro do cliente
     DB-->>-WO: Confirma persistência
     WO-->>-Lambda: 201 Created (CustomerResponse)
-    Lambda-->>-Ator: 201 Created<br/>(Cliente provisionado no IAM e Catálogo)
+    Lambda-->>-Ator: 201 Created<br/>(Usuário provisionado no IAM e Catálogo)
 
     %% -------------------------------------------------------------------------
-    %% 3. Saga Compensatória (Rollback) por Falha na API Work Order
+    %% 3. Saga Compensatória (Rollback por Falha na API)
     %% -------------------------------------------------------------------------
-    Note over Ator,DB: 3. Falha na API Work Order: Execução de Rollback Compensatório (Saga Rollback)
-    Ator->>+Lambda: POST /users<br/>(Dados cadastrais do cliente)
-    Lambda->>Lambda: Valida documento (CPF)
+    Note over Ator,DB: 3. Cenário de Falha na API: Execução de Rollback Compensatório
+    Ator->>+Lambda: POST /users<br/>{ role: "CUSTOMER", name: "Cliente Rollback",<br/>  document: "28469850027", email, password }
+    Lambda->>Lambda: Valida documento
     Lambda->>+KC: POST /admin/realms/garage/users
     KC-->>-Lambda: 201 Created (userId: uuid)
-    Lambda->>+WO: POST /api/v1/customers<br/>{ id: uuid, document, name, email }
-    WO->>+DB: Tenta persistir no banco
-    DB-->>-WO: Falha de conexão / Conflito
+    Lambda->>+WO: POST /api/v1/customers
+    WO->>+DB: Tenta persistir cliente
+    DB-->>-WO: Falha de conexão / indisponibilidade
     WO-->>-Lambda: 500 Internal Server Error
-    Note over Lambda,KC: Saga Compensatória: Exclusão Imediata no IdP
+    Note over Lambda,KC: Saga Compensatória: Reversão imediata no IAM
     Lambda->>+KC: DELETE /admin/realms/garage/users/{uuid}
-    KC-->>-Lambda: 204 No Content (Identidade removida)
-    Lambda-->>-Ator: 502 Bad Gateway<br/>(ProblemDetail: REGISTRATION_ROLLBACK)
+    KC-->>-Lambda: 204 No Content (Usuário excluído do IAM)
+    Lambda-->>-Ator: 502 Bad Gateway<br/>(Cadastro revertido para garantir consistência)
 ```
-
-</div>
